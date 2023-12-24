@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">BumScheduler</string>
+    
+    <string name="text_calendar">Calendar</string>
+    <string name="text_map">Map</string>
+    <string name="text_notification">Notification</string>
+    <string name="text_setting">Setting</string>
 </resources>
