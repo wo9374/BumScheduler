@@ -121,6 +121,12 @@ fun BottomNavigationBar(navController: NavHostController) {
 
 @Preview(showBackground = true)
 @Composable
+fun BumSchedulerAppPreview(){
+    BumSchedulerApp()
+}
+
+@Preview(showBackground = true)
+@Composable
 fun BottomNavigationBarPreview(){
     val navController = rememberNavController()
     BottomNavigationBar(navController)

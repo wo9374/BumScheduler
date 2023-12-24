@@ -15,3 +15,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "BumScheduler"
 include(":app")
+include(":data")
+include(":domain")
