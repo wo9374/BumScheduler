@@ -1,5 +1,6 @@
 package com.ljb.bumscheduler.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,6 +19,8 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -37,8 +41,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ljb.bumscheduler.DlogUtil
+import com.ljb.bumscheduler.MyTag
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
@@ -46,6 +53,8 @@ import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.Month
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -75,14 +84,51 @@ fun CalendarApp() {
         ) {
             CalendarHeader(currentDate)
 
-            CalendarGrid(
-                currentDate,
-                selectedDate,
+            CalendarPager(
+                currentDate = currentDate,
+                selectedDate = selectedDate,
                 onSelectedDate = { date ->
                     selectedDate = date
                 }
             )
         }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun CalendarPager(
+    currentDate: LocalDate,
+    selectedDate: LocalDate,
+    onSelectedDate: (LocalDate) -> Unit
+) {
+
+    val startYear = 1950
+    val endYear = 2100
+
+    val dateList = (startYear..endYear).flatMap { year ->
+        Month.values().map { month ->
+            YearMonth.of(year, month).atDay(1)
+        }
+    }
+
+    val currentPage = dateList.indexOfFirst { date ->
+        date.month == currentDate.month && date.year == currentDate.year
+    }
+
+    // rememberPagerState를 사용하여 현재 페이지를 저장
+    val pagerState = rememberPagerState(initialPage = currentPage) {
+        dateList.size
+    }
+    HorizontalPager(
+        state = pagerState,
+        verticalAlignment = Alignment.Top
+    ) { page ->
+        CalendarGrid(
+            calendarDate = dateList[page],
+            selectedDate = selectedDate,
+            onSelectedDate = onSelectedDate
+        )
     }
 }
 
@@ -134,38 +180,55 @@ fun CalendarHeader(currentDate: LocalDate) {
 
 @Composable
 fun CalendarGrid(
-    currentDate: LocalDate,
+    calendarDate: LocalDate,
     selectedDate: LocalDate,
     onSelectedDate: (LocalDate) -> Unit
 ) {
-    val lastDay by remember { mutableIntStateOf(currentDate.lengthOfMonth()) }
+    val lastDay by remember { mutableIntStateOf(calendarDate.lengthOfMonth()) }
     val days by remember { mutableStateOf(IntRange(1, lastDay).toList()) }
 
-    //첫 날의 Column 위치
-    val firstDayOfWeek = currentDate.withDayOfMonth(1).dayOfWeek.value
+    //첫번째 날의 컬럼 위치 ( 1: 월요일 ~ 7: 일요일)
+    val firstDayOfWeek = calendarDate.dayOfWeek.value
 
-    //마지막 날의 Column 위치 (0 = 일요일)
+    //마지막 날의 컬럼 위치
     val lastDayColumn = (firstDayOfWeek + lastDay - 1) % 7
-    val afterDay = 7 - lastDayColumn - 1 // 일주일, 마지막 날 Column, index로 인한 -1
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(7),
-    ) {
+    //말일 이후 빈공간 Count / 일주일 - 마지막 날 Column, 일요일 시작이라 -1
+    val afterBoxCount = 7 - lastDayColumn - 1
 
-        //첫 날의 요일을 맞추기 위한 빈 박스 생성
-        repeat(firstDayOfWeek) {
-            item {
-                Box(modifier = Modifier.size(50.dp))
+    //좌측 일요일 시작이라 7일때는 0으로 count
+    val totalGridCount = if (firstDayOfWeek == 7)
+        0
+    else
+        firstDayOfWeek + days.size + afterBoxCount
+
+
+    val boxHeight = if (totalGridCount > 35) {
+        45.dp
+    } else {
+        54.dp
+    }
+
+    LazyVerticalGrid(columns = GridCells.Fixed(7),) {
+
+        //좌측 일요일부터 시작할거라 7이면 박스를 생성하지 않음
+        if (firstDayOfWeek != 7) {
+            //첫 날의 요일을 맞추기 위한 빈 박스 생성
+            repeat(firstDayOfWeek) {
+                item {
+                    EmptyDay(boxHeight)
+                }
             }
         }
 
         items(days) { day ->
-            val date = currentDate.withDayOfMonth(day)
+            val date = calendarDate.withDayOfMonth(day)
             val isSelected = remember(selectedDate) {
                 selectedDate.compareTo(date) == 0
             }
 
             CalendarDay(
+                height = boxHeight,
                 date = date,
                 isToday = date == LocalDate.now(),
                 isSelected = isSelected,
@@ -174,9 +237,9 @@ fun CalendarGrid(
         }
 
         //마지막 날 이후 빈 박스 생성
-        repeat(afterDay) {
+        repeat(afterBoxCount) {
             item {
-                Box(modifier = Modifier.size(50.dp))
+                EmptyDay(boxHeight)
             }
         }
     }
@@ -184,6 +247,8 @@ fun CalendarGrid(
 
 @Composable
 fun CalendarDay(
+    modifier : Modifier = Modifier,
+    height: Dp,
     date: LocalDate,
     isToday: Boolean,
     isSelected: Boolean,
@@ -207,8 +272,9 @@ fun CalendarDay(
     }
 
     Box(
-        modifier = Modifier
-            .size(50.dp)
+        modifier = modifier
+            .height(height)
+            //.size(50.dp)
             .clip(shape = RoundedCornerShape(10.dp))
             .calendarBorder(isSelected)
             .noRippleClickable { onDateSelected(date) },
@@ -232,6 +298,13 @@ fun CalendarDay(
             )
         }
     }
+}
+
+@Composable
+fun EmptyDay(
+    height: Dp
+) {
+    Box(modifier = Modifier.height(height))
 }
 
 fun Modifier.calendarBorder(boolean: Boolean) = composed {
@@ -296,7 +369,13 @@ fun CalendarGridPreview() {
 @Preview(showBackground = true)
 @Composable
 fun CalendarDayPreview() {
+    val bigGrid = false
+
+    val boxHeight = if (bigGrid) { 45.dp } else { 54.dp }
+
     CalendarDay(
+        modifier = Modifier.width(60.dp),
+        height = boxHeight,
         date = LocalDate.now(),
         isToday = true,
         isSelected = true,

@@ -1,6 +1,8 @@
 package com.ljb.bumscheduler
 
 import android.util.Log
+
+const val MyTag = "MyTag"
 object DlogUtil {
     var debugMode = true
     fun d(TAG: String?, `object`: Any) {
