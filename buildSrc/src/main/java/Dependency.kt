@@ -17,6 +17,7 @@ object Versions {
     
     const val livedata = "2.6.2"
     const val viewmodel = "2.6.2"
+    const val paging = "3.2.1"
 
     const val ktor = "2.3.6"
     const val retrofit = "2.9.0"
@@ -35,6 +36,7 @@ object Lib {
         const val activity = "androidx.activity:activity-ktx:1.8.1"
         const val liveData = "androidx.lifecycle:lifecycle-livedata-ktx:${Versions.livedata}"
         const val viewModel = "androidx.lifecycle:lifecycle-viewmodel-ktx:${Versions.viewmodel}"
+        const val paging = "androidx.paging:paging-runtime:${Versions.paging}"
     }
     object DataStore {
         const val preferencesStore = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
@@ -121,4 +123,5 @@ object ComposeVersion {
 
 object LibCompose {
     const val navigation = "androidx.navigation:navigation-compose:${ComposeVersion.navigation}"
+    const val paging = "androidx.paging:paging-compose:${Versions.paging}"
 }
