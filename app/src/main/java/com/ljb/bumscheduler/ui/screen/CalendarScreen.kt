@@ -206,6 +206,12 @@ fun HorizontalCalendar(
 
     onSelectDate: (LocalDate) -> Unit
 ) {
+
+    // 현재 보이는 페이지를 기반으로 로드할 페이지 범위를 계산 (성능 문제로 인한 보이는 페이지만 로딩)
+    val currentPage = pagerState.currentPage
+    val startPage = maxOf(0, currentPage - 1)
+    val endPage = minOf(pagerState.pageCount - 1, currentPage + 1)
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -216,13 +222,15 @@ fun HorizontalCalendar(
             state = pagerState,
             verticalAlignment = Alignment.Top
         ) { page ->
-            val displayDate = LocalDate.of(
-                yearRange.first + page / 12,
-                page % 12 + 1,
-                1
-            )
 
-            if (page in pagerState.currentPage - 1..pagerState.currentPage + 1) { // 페이징 성능 개선을 위한 조건문 (버벅임 많이 줄임)
+            // 현재 페이지가 로드할 범위 내에 있는지 확인
+            if (page in startPage..endPage) {
+                val displayDate = LocalDate.of(
+                    yearRange.first + page / 12,
+                    page % 12 + 1,
+                    1
+                )
+
                 CalendarGrid(
                     calendarDate = displayDate,
                     selectedDate = selectedDate,
@@ -232,6 +240,9 @@ fun HorizontalCalendar(
         }
     }
 }
+
+private const val DATE_FORMAT_MONTH = "M월"
+private const val DATE_FORMAT_YEAR_MONTH = "yyyy년 M월"
 
 @Composable
 fun CalendarHeader(currentDate: LocalDate) {
@@ -244,9 +255,9 @@ fun CalendarHeader(currentDate: LocalDate) {
 
         // 현재 년도면 월만 표시
         val displayMonth = if (currentDate.year == LocalDate.now().year) {
-            currentDate.format(DateTimeFormatter.ofPattern("M월"))
+            currentDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT_MONTH))
         } else {
-            currentDate.format(DateTimeFormatter.ofPattern("yyyy년 M월"))
+            currentDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT_YEAR_MONTH))
         }
 
         // 월 표시
@@ -338,9 +349,7 @@ fun CalendarGrid(
 
         items(days) { day ->
             val date = calendarDate.withDayOfMonth(day)
-            val isSelected = remember(selectedDate) {
-                selectedDate.compareTo(date) == 0
-            }
+            val isSelected = selectedDate.compareTo(date) == 0
 
             CalendarDay(
                 height = boxHeight,
@@ -369,26 +378,6 @@ fun CalendarDay(
 
     onSelectDate: (LocalDate) -> Unit
 ) {
-
-    val textColor = when (displayDate.dayOfWeek) {
-        DayOfWeek.SUNDAY -> DefaultRed
-        DayOfWeek.SATURDAY -> DefaultBlue
-        else -> {
-            // 오늘이면 todayBgColor 때문에 리버스 컬러
-            if (isToday)
-                reverseTxtColor(isSystemInDarkTheme())
-            else
-                defaultTxtColor(isSystemInDarkTheme())
-        }
-    }
-
-    //오늘 숫자 작은 background
-    val todayBgColor = when (displayDate.dayOfWeek) {
-        DayOfWeek.SUNDAY -> DefaultRed
-        DayOfWeek.SATURDAY -> DefaultBlue
-        else -> grayColor(isSystemInDarkTheme())
-    }
-
     Box(
         modifier = Modifier
             .height(height)
@@ -404,12 +393,12 @@ fun CalendarDay(
                 .wrapContentHeight()
                 .padding(top = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .calendarBackground(isToday, todayBgColor),
+                .calendarBackground(isToday, getTodayBgColor(displayDate.dayOfWeek)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = displayDate.dayOfMonth.toString(),
-                color = textColor,
+                color = getTextColor(displayDate.dayOfWeek),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -422,6 +411,24 @@ fun EmptyDay(
     height: Dp
 ) {
     Box(modifier = Modifier.height(height))
+}
+
+@Composable
+fun getTextColor(dayOfWeek: DayOfWeek): Color {
+    return when (dayOfWeek) {
+        DayOfWeek.SUNDAY -> DefaultRed
+        DayOfWeek.SATURDAY -> DefaultBlue
+        else -> defaultTxtColor(isSystemInDarkTheme())
+    }
+}
+
+@Composable
+fun getTodayBgColor(dayOfWeek: DayOfWeek): Color {
+    return when (dayOfWeek) {
+        DayOfWeek.SUNDAY -> DefaultRed
+        DayOfWeek.SATURDAY -> DefaultBlue
+        else -> grayColor(isSystemInDarkTheme())
+    }
 }
 
 fun Modifier.calendarBorder(boolean: Boolean) = composed {
