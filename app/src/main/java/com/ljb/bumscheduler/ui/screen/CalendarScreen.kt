@@ -216,7 +216,10 @@ fun HorizontalCalendar(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        CalendarHeader(displayMonth)
+        CalendarHeader(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            currentDate = displayMonth
+        )
 
         HorizontalPager(
             state = pagerState,
@@ -232,6 +235,7 @@ fun HorizontalCalendar(
                 )
 
                 CalendarGrid(
+                    modifier = Modifier.padding(horizontal = 10.dp),
                     calendarDate = displayDate,
                     selectedDate = selectedDate,
                     onSelectDate = onSelectDate
@@ -243,11 +247,16 @@ fun HorizontalCalendar(
 
 private const val DATE_FORMAT_MONTH = "M월"
 private const val DATE_FORMAT_YEAR_MONTH = "yyyy년 M월"
+private val formatMonth = DateTimeFormatter.ofPattern(DATE_FORMAT_MONTH)
+private val formatYearMonth = DateTimeFormatter.ofPattern(DATE_FORMAT_YEAR_MONTH)
 
 @Composable
-fun CalendarHeader(currentDate: LocalDate) {
+fun CalendarHeader(
+    modifier: Modifier,
+    currentDate: LocalDate
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -255,9 +264,9 @@ fun CalendarHeader(currentDate: LocalDate) {
 
         // 현재 년도면 월만 표시
         val displayMonth = if (currentDate.year == LocalDate.now().year) {
-            currentDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT_MONTH))
+            currentDate.format(formatMonth)
         } else {
-            currentDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT_YEAR_MONTH))
+            currentDate.format(formatYearMonth)
         }
 
         // 월 표시
@@ -306,6 +315,7 @@ fun CalendarHeader(currentDate: LocalDate) {
 
 @Composable
 fun CalendarGrid(
+    modifier: Modifier,
     calendarDate: LocalDate,
     selectedDate: LocalDate,
 
@@ -336,7 +346,10 @@ fun CalendarGrid(
         54.dp
     }
 
-    LazyVerticalGrid(columns = GridCells.Fixed(7)) {
+    LazyVerticalGrid(
+        modifier = modifier,
+        columns = GridCells.Fixed(7)
+    ) {
 
         // 첫 날 전 채워야 할 빈칸 수 - 좌측 일요일부터 시작 7(일요일 index)이면 박스를 생성하지 않음
         if (firstDayOfWeek != 7) {
@@ -378,6 +391,8 @@ fun CalendarDay(
 
     onSelectDate: (LocalDate) -> Unit
 ) {
+    val dayOfWeek = displayDate.dayOfWeek
+
     Box(
         modifier = Modifier
             .height(height)
@@ -393,12 +408,12 @@ fun CalendarDay(
                 .wrapContentHeight()
                 .padding(top = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .calendarBackground(isToday, getTodayBgColor(displayDate.dayOfWeek)),
+                .calendarBackground(isToday, getTodayBgColor(dayOfWeek)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = displayDate.dayOfMonth.toString(),
-                color = getTextColor(displayDate.dayOfWeek),
+                color = getTextColor(isToday, dayOfWeek),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -414,11 +429,17 @@ fun EmptyDay(
 }
 
 @Composable
-fun getTextColor(dayOfWeek: DayOfWeek): Color {
+fun getTextColor(isToday: Boolean, dayOfWeek: DayOfWeek): Color {
     return when (dayOfWeek) {
         DayOfWeek.SUNDAY -> DefaultRed
         DayOfWeek.SATURDAY -> DefaultBlue
-        else -> defaultTxtColor(isSystemInDarkTheme())
+        else -> {
+            if (isToday){
+                reverseTxtColor(isSystemInDarkTheme())
+            } else {
+                defaultTxtColor(isSystemInDarkTheme())
+            }
+        }
     }
 }
 
@@ -496,7 +517,10 @@ fun HorizontalCalendarPreview() {
 @Preview(showBackground = true)
 @Composable
 fun CalendarHeaderPreview() {
-    CalendarHeader(LocalDate.now())
+    CalendarHeader(
+        Modifier.padding(horizontal = 10.dp),
+        LocalDate.now()
+    )
 }
 
 @Preview(showBackground = true)
@@ -505,6 +529,7 @@ fun CalendarGridPreview() {
     val currentDate = LocalDate.now()
     var selectedDate by remember { mutableStateOf(currentDate) }
     CalendarGrid(
+        modifier = Modifier.padding(horizontal = 10.dp),
         currentDate,
         selectedDate,
         onSelectDate = { date ->
