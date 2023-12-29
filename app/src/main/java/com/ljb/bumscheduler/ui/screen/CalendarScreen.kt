@@ -36,7 +36,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,30 +65,28 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
+private val formatMonth = DateTimeFormatter.ofPattern("M월")
+private val formatYearMonth = DateTimeFormatter.ofPattern("yyyy년 M월")
+
+val yearRange = IntRange(1970, 2100)
+
+// 현재 LocalDate
+val currentDate: LocalDate = LocalDate.now()
+
+// 현재 년도의 월 Page / HorizontalPager 의 page 는 0부터 시작, getMonthValue - 1을 해줘야 함
+val initialPage = (currentDate.year - yearRange.first) * 12 + currentDate.monthValue - 1
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CalendarScreen() {
 
     val scope = rememberCoroutineScope()
 
-    val yearRange = IntRange(1970, 2100)
+    var selectedDate by remember { mutableStateOf(currentDate) }    // 선택된 Day LocalDate
+    var headerMonth by remember { mutableStateOf(currentDate) }     // 헤더에 보여줄 Month LocalDate
 
-    // 현재 년도의 월 Page / HorizontalPager 의 page 는 0부터 시작, getMonthValue - 1을 해줘야 함
-    val initialPage = (LocalDate.now().year - yearRange.first) * 12 + LocalDate.now().monthValue - 1
-
-    val calendarPagerState = rememberPagerState(initialPage = initialPage) {
+    val pagerState = rememberPagerState(initialPage = initialPage) {
         (yearRange.last - yearRange.first) * 12 // 모든 년도의 월 수 만큼 pageCount
-    }
-
-    var currentPage by remember { mutableIntStateOf(initialPage) }   // 현재 Page
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) } // 선택된 Day LocalDate
-    var currentMonth by remember { mutableStateOf(LocalDate.now()) } // 헤더에 보여줄 Month LocalDate
-
-    // HorizontalPager 가 Paging 될 때 마다 호출
-    LaunchedEffect(calendarPagerState.currentPage) {
-        val addMonth = (calendarPagerState.currentPage - currentPage).toLong()
-        currentMonth = currentMonth.plusMonths(addMonth)
-        currentPage = calendarPagerState.currentPage
     }
 
     Scaffold(
@@ -105,29 +102,36 @@ fun CalendarScreen() {
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")
                     scope.launch {
-                        calendarPagerState.animateScrollToPage(initialPage)
+                        pagerState.animateScrollToPage(initialPage)
                     }
                 }
             )
         }
-    )
-    { paddingValues ->
+    ) { paddingValues ->
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         )
         {
+            CalendarHeader(
+                modifier = Modifier.padding(horizontal = 10.dp),
+                monthDate = headerMonth
+            )
+
             HorizontalCalendar(
-                yearRange = yearRange,
-                pagerState = calendarPagerState,
-                displayMonth = currentMonth,
+                pagerState = pagerState,
                 selectedDate = selectedDate,
                 onSelectDate = { date ->
                     selectedDate = date
+                },
+                changeMonth = {
+                    headerMonth = it
                 }
             )
         }
+    }.also {
+        DlogUtil.d(MyTag, "Recomposition CalendarScreen Scaffold")
     }
 }
 
@@ -145,7 +149,7 @@ fun CalendarAppBar(
         title = {},
         navigationIcon = {
             // AppBar 크기 변경으로 인한 자동 CenterVertically 적용이 안되어 Box 안에 IconButton 사용
-            Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center){
+            Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
                 IconButton(onClick = menuClicked) {
                     Icon(
                         imageVector = Icons.Filled.Menu,
@@ -156,7 +160,7 @@ fun CalendarAppBar(
             }
         },
         actions = {
-            Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center){
+            Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
                 IconButton(onClick = searchClicked) {
                     Icon(
                         imageVector = Icons.Filled.Search,
@@ -166,7 +170,7 @@ fun CalendarAppBar(
                 }
             }
 
-            Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center){
+            Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
                 // Today Button - IconButton() 에 Text() 사용할 수 없어 Box Clickable 대체
                 Box(
                     modifier = Modifier
@@ -183,7 +187,7 @@ fun CalendarAppBar(
                                 shape = RoundedCornerShape(4.dp)
                             )
                             .padding(top = 2.dp, bottom = 3.dp, start = 3.dp, end = 3.dp),
-                        text = LocalDate.now().dayOfMonth.toString(),
+                        text = currentDate.dayOfMonth.toString(),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = defaultTxtColor(isSystemInDarkTheme()),
@@ -198,62 +202,54 @@ fun CalendarAppBar(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HorizontalCalendar(
-    yearRange : IntRange,
     pagerState: PagerState,
-
-    displayMonth : LocalDate,
     selectedDate: LocalDate,
 
-    onSelectDate: (LocalDate) -> Unit
+    onSelectDate: (LocalDate) -> Unit,
+    changeMonth: (LocalDate) -> Unit,
 ) {
 
-    // 현재 보이는 페이지를 기반으로 로드할 페이지 범위를 계산 (성능 문제로 인한 보이는 페이지만 로딩)
-    val currentPage = pagerState.currentPage
-    val startPage = maxOf(0, currentPage - 1)
-    val endPage = minOf(pagerState.pageCount - 1, currentPage + 1)
+    // HorizontalPager 가 Paging 될 때 마다 호출
+    LaunchedEffect(pagerState.currentPage) {
+        changeMonth.invoke(
+            LocalDate.of(
+                yearRange.first + pagerState.currentPage / 12,
+                pagerState.currentPage % 12 + 1,
+                1
+            )
+        )
+    }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        CalendarHeader(
-            modifier = Modifier.padding(horizontal = 10.dp),
-            currentDate = displayMonth
+    HorizontalPager(
+        state = pagerState,
+        verticalAlignment = Alignment.Top
+    ) { page ->
+
+        val year = yearRange.first + page / 12
+        val month = page % 12 + 1
+
+        val calendarDate = LocalDate.of(
+            year,
+            month,
+            if (year == currentDate.year && month == currentDate.monthValue)
+                currentDate.dayOfMonth
+            else
+                1
         )
 
-        HorizontalPager(
-            state = pagerState,
-            verticalAlignment = Alignment.Top
-        ) { page ->
-
-            // 현재 페이지가 로드할 범위 내에 있는지 확인
-            if (page in startPage..endPage) {
-                val displayDate = LocalDate.of(
-                    yearRange.first + page / 12,
-                    page % 12 + 1,
-                    1
-                )
-
-                CalendarGrid(
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                    calendarDate = displayDate,
-                    selectedDate = selectedDate,
-                    onSelectDate = onSelectDate
-                )
-            }
-        }
+        CalendarGrid(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            calendarDate = calendarDate,
+            selectedDate = selectedDate,
+            onSelectDate = onSelectDate
+        )
     }
 }
-
-private const val DATE_FORMAT_MONTH = "M월"
-private const val DATE_FORMAT_YEAR_MONTH = "yyyy년 M월"
-private val formatMonth = DateTimeFormatter.ofPattern(DATE_FORMAT_MONTH)
-private val formatYearMonth = DateTimeFormatter.ofPattern(DATE_FORMAT_YEAR_MONTH)
 
 @Composable
 fun CalendarHeader(
     modifier: Modifier,
-    currentDate: LocalDate
+    monthDate: LocalDate
 ) {
     Column(
         modifier = modifier
@@ -263,10 +259,10 @@ fun CalendarHeader(
     ) {
 
         // 현재 년도면 월만 표시
-        val displayMonth = if (currentDate.year == LocalDate.now().year) {
-            currentDate.format(formatMonth)
+        val displayMonth = if (monthDate.year == currentDate.year) {
+            monthDate.format(formatMonth)
         } else {
-            currentDate.format(formatYearMonth)
+            monthDate.format(formatYearMonth)
         }
 
         // 월 표시
@@ -321,14 +317,16 @@ fun CalendarGrid(
 
     onSelectDate: (LocalDate) -> Unit
 ) {
-    val lastDay by remember { mutableIntStateOf(calendarDate.lengthOfMonth()) }
-    val days by remember { mutableStateOf(IntRange(1, lastDay).toList()) }
+    val lastDay = calendarDate.lengthOfMonth()
+    val days = IntRange(1, lastDay).toList()
 
     //첫번째 날의 컬럼 위치 ( 1: 월요일 ~ 7: 일요일)
     val firstDayOfWeek = calendarDate.dayOfWeek.value
+    DlogUtil.d(MyTag, "firstDayOfWeek $firstDayOfWeek")
 
     //마지막 날의 컬럼 위치
     val lastDayColumn = (firstDayOfWeek + lastDay - 1) % 7
+    DlogUtil.d(MyTag, "lastDayColumn $lastDayColumn")
 
     //말일 이후 빈공간 Count / 일주일 - 마지막 날 Column, 일요일 시작이라 -1
     val afterBoxCount = 7 - lastDayColumn - 1
@@ -346,13 +344,15 @@ fun CalendarGrid(
         54.dp
     }
 
+    val dayList = days.map { day ->
+        calendarDate.withDayOfMonth(day)
+    }
+
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Fixed(7)
     ) {
 
-        // 첫 날 전 채워야 할 빈칸 수 - 좌측 일요일부터 시작 7(일요일 index)이면 박스를 생성하지 않음
-        if (firstDayOfWeek != 7) {
             repeat(firstDayOfWeek) {
                 item {
                     EmptyDay(boxHeight)
@@ -360,15 +360,12 @@ fun CalendarGrid(
             }
         }
 
-        items(days) { day ->
-            val date = calendarDate.withDayOfMonth(day)
-            val isSelected = selectedDate.compareTo(date) == 0
-
+        items(dayList) { day ->
             CalendarDay(
                 height = boxHeight,
-                displayDate = date,
-                isToday = date == LocalDate.now(),
-                isSelected = isSelected,
+                displayDate = day,
+                isToday = day == currentDate,
+                isSelected = selectedDate.compareTo(day) == 0,
                 onSelectDate = onSelectDate
             )
         }
@@ -388,7 +385,6 @@ fun CalendarDay(
     displayDate: LocalDate,
     isToday: Boolean,
     isSelected: Boolean,
-
     onSelectDate: (LocalDate) -> Unit
 ) {
     val dayOfWeek = displayDate.dayOfWeek
@@ -434,7 +430,7 @@ fun getTextColor(isToday: Boolean, dayOfWeek: DayOfWeek): Color {
         DayOfWeek.SUNDAY -> DefaultRed
         DayOfWeek.SATURDAY -> DefaultBlue
         else -> {
-            if (isToday){
+            if (isToday) {
                 reverseTxtColor(isSystemInDarkTheme())
             } else {
                 defaultTxtColor(isSystemInDarkTheme())
@@ -506,11 +502,10 @@ fun CalendarAppBar() {
 @Composable
 fun HorizontalCalendarPreview() {
     HorizontalCalendar(
-        yearRange = IntRange(1970, 2100),
         pagerState = rememberPagerState(initialPage = 2) { 3 },
-        displayMonth = LocalDate.now(),
-        selectedDate = LocalDate.now(),
-        onSelectDate = { }
+        selectedDate = currentDate,
+        onSelectDate = { },
+        changeMonth = { }
     )
 }
 
@@ -519,14 +514,13 @@ fun HorizontalCalendarPreview() {
 fun CalendarHeaderPreview() {
     CalendarHeader(
         Modifier.padding(horizontal = 10.dp),
-        LocalDate.now()
+        currentDate
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CalendarGridPreview() {
-    val currentDate = LocalDate.now()
     var selectedDate by remember { mutableStateOf(currentDate) }
     CalendarGrid(
         modifier = Modifier.padding(horizontal = 10.dp),
@@ -542,11 +536,15 @@ fun CalendarGridPreview() {
 @Composable
 fun CalendarDayPreview() {
     val bigGrid = false
-    val boxHeight = if (bigGrid) { 45.dp } else { 54.dp }
+    val boxHeight = if (bigGrid) {
+        45.dp
+    } else {
+        54.dp
+    }
 
     CalendarDay(
         height = boxHeight,
-        displayDate = LocalDate.now(),
+        displayDate = currentDate,
         isToday = true,
         isSelected = true,
         onSelectDate = {}
