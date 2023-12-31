@@ -148,7 +148,7 @@ fun CalendarAppBar(
         //colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Magenta),
         title = {},
         navigationIcon = {
-            // AppBar 크기 변경으로 인한 자동 CenterVertically 적용이 안되어 Box 안에 IconButton 사용
+            // AppBar 크기 변경으로 인한 자동 CenterVertically 적용이 안되어 Box 로 wrap
             Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
                 IconButton(onClick = menuClicked) {
                     Icon(
@@ -179,20 +179,25 @@ fun CalendarAppBar(
                         .clickable { todayClicked.invoke() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
+                    Box(
                         modifier = Modifier
+                            .size(22.dp)
                             .border(
                                 width = 1.dp,
                                 color = defaultTxtColor(isSystemInDarkTheme()),
                                 shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(top = 2.dp, bottom = 3.dp, start = 3.dp, end = 3.dp),
-                        text = currentDate.dayOfMonth.toString(),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = defaultTxtColor(isSystemInDarkTheme()),
-                        textAlign = TextAlign.Center
-                    )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ){
+                        Text(
+                            modifier = Modifier.fillMaxSize().padding(top = 1.dp),
+                            text = currentDate.dayOfMonth.toString(),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = defaultTxtColor(isSystemInDarkTheme()),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -227,15 +232,7 @@ fun HorizontalCalendar(
 
         val year = yearRange.first + page / 12
         val month = page % 12 + 1
-
-        val calendarDate = LocalDate.of(
-            year,
-            month,
-            if (year == currentDate.year && month == currentDate.monthValue)
-                currentDate.dayOfMonth
-            else
-                1
-        )
+        val calendarDate = LocalDate.of(year, month, 1)
 
         CalendarGrid(
             modifier = Modifier.padding(horizontal = 10.dp),
@@ -320,44 +317,75 @@ fun CalendarGrid(
     val lastDay = calendarDate.lengthOfMonth()
     val days = IntRange(1, lastDay).toList()
 
-    //첫번째 날의 컬럼 위치 ( 1: 월요일 ~ 7: 일요일)
-    val firstDayOfWeek = calendarDate.dayOfWeek.value
-    DlogUtil.d(MyTag, "firstDayOfWeek $firstDayOfWeek")
+    // 첫번째 날의 컬럼 위치 ( 1: 월요일 ~ 7: 일요일)
+    val firstDayColumn = calendarDate.dayOfWeek.value
+    val lastDayColumn = (firstDayColumn + lastDay - 1) % 7
 
-    //마지막 날의 컬럼 위치
-    val lastDayColumn = (firstDayOfWeek + lastDay - 1) % 7
-    DlogUtil.d(MyTag, "lastDayColumn $lastDayColumn")
-
-    //말일 이후 빈공간 Count / 일주일 - 마지막 날 Column, 일요일 시작이라 -1
+    // 다음 달 Day / 일요일 시작이라 -1
     val afterBoxCount = 7 - lastDayColumn - 1
 
-    //좌측 일요일 시작이라 7일때는 0으로 count
-    val totalGridCount = if (firstDayOfWeek == 7)
-        0
-    else
-        firstDayOfWeek + days.size + afterBoxCount
+    // 총 달력의 Count
+    var totalGridCount = days.size
+    if (firstDayColumn != 7) totalGridCount += firstDayColumn
+    if (afterBoxCount != 7) totalGridCount += afterBoxCount
 
-    // 표시 열(5주, 6주)이 달라 크기를 같게 위해 박스 크기 조절
-    val boxHeight = if (totalGridCount > 35) {
-        45.dp
-    } else {
-        54.dp
-    }
-
+    // 현재 Month 의 Day LocalDate
     val dayList = days.map { day ->
         calendarDate.withDayOfMonth(day)
     }
+
+    // 표시 Week 크기를 같게 위해 박스 크기 조절 (270)
+    val boxHeight = if (totalGridCount <= 35){
+        54.dp
+    } else {
+        45.dp
+    }
+
+    // 이전 달 Day
+    val prevMonthDay = if (firstDayColumn < 7){
+        val prevMonth = calendarDate.minusMonths(1)
+        val prevLastDay = prevMonth.lengthOfMonth()
+        (prevLastDay - firstDayColumn + 1 .. prevLastDay).toList().map {
+            prevMonth.withDayOfMonth(it)
+        }
+    } else
+        emptyList()
+
+
+    val nextMonth = calendarDate.plusMonths(1)
+    val nextMonthDay = if (afterBoxCount != 0){
+        (1 .. afterBoxCount).toList().map {
+            nextMonth.withDayOfMonth(it)
+        }
+    } else if (totalGridCount <= 28) {      // 현재 달이 4주 일때는 다음 달 날짜를 7개 더 추가
+        (1 .. 7).toList().map {
+            nextMonth.withDayOfMonth(it)
+        }
+    } else
+        emptyList()
 
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Fixed(7)
     ) {
 
+        // 첫 날 전 채워야 할 빈칸 수
+        // 좌측 일요일부터 시작이므로 7(일요일 index)이면 박스를 생성하지 않음
+        /*if (firstDayOfWeek != 7) {
             repeat(firstDayOfWeek) {
                 item {
                     EmptyDay(boxHeight)
                 }
             }
+        }*/
+
+        items(prevMonthDay) { day ->
+            PrevNextDay(
+                height = boxHeight,
+                displayDate = day,
+                isToday = false,
+                onSelectDate = {}
+            )
         }
 
         items(dayList) { day ->
@@ -370,12 +398,23 @@ fun CalendarGrid(
             )
         }
 
+        items(nextMonthDay){ day ->
+            PrevNextDay(
+                height = boxHeight,
+                displayDate = day,
+                isToday = false,
+                onSelectDate = {}
+            )
+        }
+
+
         // 마지막 날 후 채워야 할 빈칸 수
-        repeat(afterBoxCount) {
+        //TODO(이후 날도 표시하고 opacity 적용)
+        /*repeat(afterBoxCount) {
             item {
                 EmptyDay(boxHeight)
             }
-        }
+        }*/
     }
 }
 
@@ -388,6 +427,22 @@ fun CalendarDay(
     onSelectDate: (LocalDate) -> Unit
 ) {
     val dayOfWeek = displayDate.dayOfWeek
+
+    val todayBgColor = when (dayOfWeek) {
+        DayOfWeek.SUNDAY -> DefaultRed
+        DayOfWeek.SATURDAY -> DefaultBlue
+        else -> grayColor(isSystemInDarkTheme())
+    }
+
+    val textColor = if(isToday){
+        reverseTxtColor(isSystemInDarkTheme())
+    } else {
+        when (dayOfWeek) {
+            DayOfWeek.SUNDAY -> DefaultRed
+            DayOfWeek.SATURDAY -> DefaultBlue
+            else -> defaultTxtColor(isSystemInDarkTheme())
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -404,12 +459,12 @@ fun CalendarDay(
                 .wrapContentHeight()
                 .padding(top = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .calendarBackground(isToday, getTodayBgColor(dayOfWeek)),
+                .calendarBackground(isToday, todayBgColor),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = displayDate.dayOfMonth.toString(),
-                color = getTextColor(isToday, dayOfWeek),
+                color = textColor,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -418,34 +473,50 @@ fun CalendarDay(
 }
 
 @Composable
-fun EmptyDay(
-    height: Dp
+fun PrevNextDay(
+    height: Dp,
+    displayDate: LocalDate,
+    isToday: Boolean,
+    onSelectDate: (LocalDate) -> Unit,
 ) {
-    Box(modifier = Modifier.height(height))
-}
+    val dayOfWeek = displayDate.dayOfWeek
 
-@Composable
-fun getTextColor(isToday: Boolean, dayOfWeek: DayOfWeek): Color {
-    return when (dayOfWeek) {
-        DayOfWeek.SUNDAY -> DefaultRed
-        DayOfWeek.SATURDAY -> DefaultBlue
-        else -> {
-            if (isToday) {
-                reverseTxtColor(isSystemInDarkTheme())
-            } else {
-                defaultTxtColor(isSystemInDarkTheme())
-            }
+    val textColor = if(isToday){
+        reverseTxtColor(isSystemInDarkTheme())
+    } else {
+        when (dayOfWeek) {
+            DayOfWeek.SUNDAY -> DefaultRed
+            DayOfWeek.SATURDAY -> DefaultBlue
+            else -> defaultTxtColor(isSystemInDarkTheme())
         }
     }
-}
 
-@Composable
-fun getTodayBgColor(dayOfWeek: DayOfWeek): Color {
-    return when (dayOfWeek) {
-        DayOfWeek.SUNDAY -> DefaultRed
-        DayOfWeek.SATURDAY -> DefaultBlue
-        else -> grayColor(isSystemInDarkTheme())
+    Box(
+        modifier = Modifier
+            .height(height)
+            .clip(shape = RoundedCornerShape(10.dp))
+            .noRippleClickable { onSelectDate(displayDate) },
+        contentAlignment = Alignment.TopCenter
+    ) {
+
+        Box(
+            modifier = Modifier
+                .width(18.dp)
+                .wrapContentHeight()
+                .padding(top = 2.dp)
+                .clip(shape = RoundedCornerShape(4.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = displayDate.dayOfMonth.toString(),
+                color = textColor.copy(alpha = 0.3f),
+                fontSize = 12.sp,
+                //fontWeight = FontWeight.Bold
+            )
+        }
     }
+
+    Box(modifier = Modifier.height(height))
 }
 
 fun Modifier.calendarBorder(boolean: Boolean) = composed {
@@ -535,11 +606,13 @@ fun CalendarGridPreview() {
 @Preview(showBackground = true)
 @Composable
 fun CalendarDayPreview() {
-    val bigGrid = false
-    val boxHeight = if (bigGrid) {
-        45.dp
-    } else {
+    val totalGridCount = 35
+    val boxHeight = if (totalGridCount <= 28) {
+        67.5.dp
+    } else if (totalGridCount <= 35){
         54.dp
+    } else {
+        45.dp
     }
 
     CalendarDay(
@@ -547,6 +620,26 @@ fun CalendarDayPreview() {
         displayDate = currentDate,
         isToday = true,
         isSelected = true,
+        onSelectDate = {}
+    )
+}
+
+@Preview( showBackground = true)
+@Composable
+fun PrevNextDayPreview(){
+    val totalGridCount = 35
+    val boxHeight = if (totalGridCount <= 28) {
+        67.5.dp
+    } else if (totalGridCount <= 35){
+        54.dp
+    } else {
+        45.dp
+    }
+
+    PrevNextDay(
+        height = boxHeight,
+        displayDate = currentDate,
+        isToday = true,
         onSelectDate = {}
     )
 }
