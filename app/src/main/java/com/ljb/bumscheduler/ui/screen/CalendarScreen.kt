@@ -39,7 +39,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -61,6 +63,7 @@ import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -72,6 +75,7 @@ val yearRange = IntRange(1970, 2100)
 
 // 현재 LocalDate
 val currentDate: LocalDate = LocalDate.now()
+val currentYearMonth: YearMonth = YearMonth.from(currentDate)
 
 // 현재 년도의 월 Page / HorizontalPager 의 page 는 0부터 시작, getMonthValue - 1을 해줘야 함
 val initialPage = (currentDate.year - yearRange.first) * 12 + currentDate.monthValue - 1
@@ -81,9 +85,6 @@ val initialPage = (currentDate.year - yearRange.first) * 12 + currentDate.monthV
 fun CalendarScreen() {
 
     val scope = rememberCoroutineScope()
-
-    var selectedDate by remember { mutableStateOf(currentDate) }    // 선택된 Day LocalDate
-    var headerMonth by remember { mutableStateOf(currentDate) }     // 헤더에 보여줄 Month LocalDate
 
     val pagerState = rememberPagerState(initialPage = initialPage) {
         (yearRange.last - yearRange.first) * 12 // 모든 년도의 월 수 만큼 pageCount
@@ -114,21 +115,32 @@ fun CalendarScreen() {
                 .padding(paddingValues)
         )
         {
+            var headerMonth by remember { mutableStateOf(currentDate) }     // 헤더에 보여줄 Month LocalDate
+
             CalendarHeader(
                 modifier = Modifier.padding(horizontal = 10.dp),
                 monthDate = headerMonth
-            )
+            ).also {
+                DlogUtil.d(MyTag, "Recomposition CalendarScreen CalendarHeader")
+            }
 
             HorizontalCalendar(
                 pagerState = pagerState,
+                headerMonth = headerMonth,
+                changeMonth = { headerMonth = it }
+            ).also {
+                DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalCalendar")
+            }
+
+            /*HorizontalScheduler(
+                monthDate = headerMonth,
                 selectedDate = selectedDate,
-                onSelectDate = { date ->
-                    selectedDate = date
-                },
-                changeMonth = {
-                    headerMonth = it
-                }
-            )
+                onSelectDate = { selectedDate = it }
+            ).also {
+                DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalScheduler")
+            }*/
+        }.also {
+            DlogUtil.d(MyTag, "Recomposition CalendarScreen Column")
         }
     }.also {
         DlogUtil.d(MyTag, "Recomposition CalendarScreen Scaffold")
@@ -190,7 +202,9 @@ fun CalendarAppBar(
                         contentAlignment = Alignment.Center
                     ){
                         Text(
-                            modifier = Modifier.fillMaxSize().padding(top = 1.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 1.dp),
                             text = currentDate.dayOfMonth.toString(),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -208,21 +222,26 @@ fun CalendarAppBar(
 @Composable
 fun HorizontalCalendar(
     pagerState: PagerState,
-    selectedDate: LocalDate,
+    headerMonth: LocalDate,
 
-    onSelectDate: (LocalDate) -> Unit,
     changeMonth: (LocalDate) -> Unit,
 ) {
+    var selectedDate by remember { mutableStateOf(headerMonth) }    // 선택된 Day LocalDate
 
     // HorizontalPager 가 Paging 될 때 마다 호출
     LaunchedEffect(pagerState.currentPage) {
-        changeMonth.invoke(
-            LocalDate.of(
-                yearRange.first + pagerState.currentPage / 12,
-                pagerState.currentPage % 12 + 1,
-                1
-            )
+        val pagedMonth = LocalDate.of(
+            yearRange.first + pagerState.currentPage / 12,
+            pagerState.currentPage % 12 + 1,
+            1
         )
+        changeMonth(pagedMonth)
+
+        selectedDate = if (YearMonth.from(pagedMonth) != currentYearMonth){
+            pagedMonth.withDayOfMonth(1)
+        } else {
+            pagedMonth.withDayOfMonth(currentDate.dayOfMonth)
+        }
     }
 
     HorizontalPager(
@@ -237,9 +256,76 @@ fun HorizontalCalendar(
         CalendarGrid(
             modifier = Modifier.padding(horizontal = 10.dp),
             calendarDate = calendarDate,
-            selectedDate = selectedDate,
-            onSelectDate = onSelectDate
-        )
+            selectedDate = if (page == pagerState.currentPage) selectedDate else null,
+            onSelectDate = { selectedDate = it }
+        ).also {
+            DlogUtil.d(MyTag, "Recomposition HorizontalCalendar CalendarGrid")
+        }
+    }.also {
+        DlogUtil.d(MyTag, "Recomposition HorizontalCalendar HorizontalPager")
+    }
+
+
+
+    HorizontalScheduler(
+        monthDate = headerMonth,
+        selectedDate = selectedDate,
+        onSelectDate = { selectedDate = it }
+    ).also {
+        DlogUtil.d(MyTag, "Recomposition HorizontalCalendar HorizontalScheduler")
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HorizontalScheduler(
+    monthDate: LocalDate,
+    selectedDate: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
+){
+    val month by rememberUpdatedState(monthDate)
+
+    val lastDay = month.lengthOfMonth() + 1
+    val prevMonth = month.minusMonths(1)
+    val nextMonth = month.plusMonths(1)
+
+    val days = (0..lastDay).toMutableList().map{
+        when (it) {
+            0 -> prevMonth
+            lastDay -> nextMonth
+            else -> month.withDayOfMonth(it)
+        }
+    }
+
+    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth) { days.size }
+
+    LaunchedEffect(schedulerState){
+        snapshotFlow { schedulerState.currentPage }.collect{
+            when(it){
+                in 1..month.lengthOfMonth() -> {
+                    val selected = days[it]
+                    onSelectDate(selected)
+                }
+                else -> {
+
+                }
+            }
+        }
+    }
+
+    /*LaunchedEffect(selectedDate){
+        schedulerState.scrollToPage(selectedDate.dayOfMonth)
+    }*/
+
+    HorizontalPager(
+        state = schedulerState
+    ){ page ->
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ){
+            Text(text = "${days[page]}")
+        }
     }
 }
 
@@ -310,12 +396,18 @@ fun CalendarHeader(
 fun CalendarGrid(
     modifier: Modifier,
     calendarDate: LocalDate,
-    selectedDate: LocalDate,
+    selectedDate: LocalDate?,
 
     onSelectDate: (LocalDate) -> Unit
 ) {
+    val select by rememberUpdatedState(newValue = selectedDate)
+
     val lastDay = calendarDate.lengthOfMonth()
-    val days = IntRange(1, lastDay).toList()
+
+    // 현재 Month 의 Day LocalDate
+    val days = IntRange(1, lastDay).toList().map { day ->
+        calendarDate.withDayOfMonth(day)
+    }
 
     // 첫번째 날의 컬럼 위치 ( 1: 월요일 ~ 7: 일요일)
     val firstDayColumn = calendarDate.dayOfWeek.value
@@ -328,11 +420,6 @@ fun CalendarGrid(
     var totalGridCount = days.size
     if (firstDayColumn != 7) totalGridCount += firstDayColumn
     if (afterBoxCount != 7) totalGridCount += afterBoxCount
-
-    // 현재 Month 의 Day LocalDate
-    val dayList = days.map { day ->
-        calendarDate.withDayOfMonth(day)
-    }
 
     // 표시 Week 크기를 같게 위해 박스 크기 조절 (270)
     val boxHeight = if (totalGridCount <= 35){
@@ -369,16 +456,6 @@ fun CalendarGrid(
         columns = GridCells.Fixed(7)
     ) {
 
-        // 첫 날 전 채워야 할 빈칸 수
-        // 좌측 일요일부터 시작이므로 7(일요일 index)이면 박스를 생성하지 않음
-        /*if (firstDayOfWeek != 7) {
-            repeat(firstDayOfWeek) {
-                item {
-                    EmptyDay(boxHeight)
-                }
-            }
-        }*/
-
         items(prevMonthDay) { day ->
             PrevNextDay(
                 height = boxHeight,
@@ -388,12 +465,12 @@ fun CalendarGrid(
             )
         }
 
-        items(dayList) { day ->
+        items(days) { day ->
             CalendarDay(
                 height = boxHeight,
                 displayDate = day,
                 isToday = day == currentDate,
-                isSelected = selectedDate.compareTo(day) == 0,
+                isSelected = select?.compareTo(day) == 0,
                 onSelectDate = onSelectDate
             )
         }
@@ -406,15 +483,6 @@ fun CalendarGrid(
                 onSelectDate = {}
             )
         }
-
-
-        // 마지막 날 후 채워야 할 빈칸 수
-        //TODO(이후 날도 표시하고 opacity 적용)
-        /*repeat(afterBoxCount) {
-            item {
-                EmptyDay(boxHeight)
-            }
-        }*/
     }
 }
 
@@ -574,8 +642,7 @@ fun CalendarAppBar() {
 fun HorizontalCalendarPreview() {
     HorizontalCalendar(
         pagerState = rememberPagerState(initialPage = 2) { 3 },
-        selectedDate = currentDate,
-        onSelectDate = { },
+        headerMonth = currentDate,
         changeMonth = { }
     )
 }
