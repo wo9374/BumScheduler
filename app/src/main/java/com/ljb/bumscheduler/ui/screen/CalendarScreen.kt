@@ -60,6 +60,7 @@ import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
 import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -116,6 +117,7 @@ fun CalendarScreen() {
         )
         {
             var headerMonth by remember { mutableStateOf(currentDate) }     // 헤더에 보여줄 Month LocalDate
+            var selectedDate by remember { mutableStateOf(headerMonth) }    // 선택된 Day LocalDate
 
             CalendarHeader(
                 modifier = Modifier.padding(horizontal = 10.dp),
@@ -126,19 +128,22 @@ fun CalendarScreen() {
 
             HorizontalCalendar(
                 pagerState = pagerState,
-                headerMonth = headerMonth,
-                changeMonth = { headerMonth = it }
+                selectedDate = selectedDate,
+                changeMonth = { headerMonth = it },
+                onSelectDate = {
+                    selectedDate = it
+                }
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalCalendar")
             }
 
-            /*HorizontalScheduler(
+            HorizontalScheduler(
                 monthDate = headerMonth,
                 selectedDate = selectedDate,
-                onSelectDate = { selectedDate = it }
+                onSelectDate = { selectedDate = it },
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalScheduler")
-            }*/
+            }
         }.also {
             DlogUtil.d(MyTag, "Recomposition CalendarScreen Column")
         }
@@ -222,12 +227,11 @@ fun CalendarAppBar(
 @Composable
 fun HorizontalCalendar(
     pagerState: PagerState,
-    headerMonth: LocalDate,
+    selectedDate: LocalDate,
 
     changeMonth: (LocalDate) -> Unit,
+    onSelectDate: (LocalDate) -> Unit,
 ) {
-    var selectedDate by remember { mutableStateOf(headerMonth) }    // 선택된 Day LocalDate
-
     // HorizontalPager 가 Paging 될 때 마다 호출
     LaunchedEffect(pagerState.currentPage) {
         val pagedMonth = LocalDate.of(
@@ -237,11 +241,12 @@ fun HorizontalCalendar(
         )
         changeMonth(pagedMonth)
 
-        selectedDate = if (YearMonth.from(pagedMonth) != currentYearMonth){
+        val selected = if (YearMonth.from(pagedMonth) != currentYearMonth){
             pagedMonth.withDayOfMonth(1)
         } else {
             pagedMonth.withDayOfMonth(currentDate.dayOfMonth)
         }
+        onSelectDate(selected)
     }
 
     HorizontalPager(
@@ -257,22 +262,12 @@ fun HorizontalCalendar(
             modifier = Modifier.padding(horizontal = 10.dp),
             calendarDate = calendarDate,
             selectedDate = if (page == pagerState.currentPage) selectedDate else null,
-            onSelectDate = { selectedDate = it }
+            onSelectDate = onSelectDate
         ).also {
             DlogUtil.d(MyTag, "Recomposition HorizontalCalendar CalendarGrid")
         }
     }.also {
         DlogUtil.d(MyTag, "Recomposition HorizontalCalendar HorizontalPager")
-    }
-
-
-
-    HorizontalScheduler(
-        monthDate = headerMonth,
-        selectedDate = selectedDate,
-        onSelectDate = { selectedDate = it }
-    ).also {
-        DlogUtil.d(MyTag, "Recomposition HorizontalCalendar HorizontalScheduler")
     }
 }
 
@@ -299,23 +294,23 @@ fun HorizontalScheduler(
 
     val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth) { days.size }
 
-    LaunchedEffect(schedulerState){
-        snapshotFlow { schedulerState.currentPage }.collect{
-            when(it){
+    LaunchedEffect(schedulerState) {
+        snapshotFlow { schedulerState.currentPage }.collectLatest { currentPage ->
+            when (currentPage) {
                 in 1..month.lengthOfMonth() -> {
-                    val selected = days[it]
+                    val selected = days[currentPage]
                     onSelectDate(selected)
                 }
                 else -> {
-
+                    // 처리 로직 추가
                 }
             }
         }
     }
 
-    /*LaunchedEffect(selectedDate){
+    LaunchedEffect(selectedDate) {
         schedulerState.scrollToPage(selectedDate.dayOfMonth)
-    }*/
+    }
 
     HorizontalPager(
         state = schedulerState
@@ -642,8 +637,9 @@ fun CalendarAppBar() {
 fun HorizontalCalendarPreview() {
     HorizontalCalendar(
         pagerState = rememberPagerState(initialPage = 2) { 3 },
-        headerMonth = currentDate,
-        changeMonth = { }
+        selectedDate = currentDate,
+        changeMonth = { },
+        onSelectDate = { }
     )
 }
 
