@@ -39,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -60,7 +59,6 @@ import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
 import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -116,8 +114,8 @@ fun CalendarScreen() {
                 .padding(paddingValues)
         )
         {
+
             var headerMonth by remember { mutableStateOf(currentDate) }     // 헤더에 보여줄 Month LocalDate
-            var selectedDate by remember { mutableStateOf(headerMonth) }    // 선택된 Day LocalDate
 
             CalendarHeader(
                 modifier = Modifier.padding(horizontal = 10.dp),
@@ -126,13 +124,13 @@ fun CalendarScreen() {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen CalendarHeader")
             }
 
+            var selectedDate by remember { mutableStateOf(headerMonth) }    // 선택된 Day LocalDate
+
             HorizontalCalendar(
                 pagerState = pagerState,
                 selectedDate = selectedDate,
                 changeMonth = { headerMonth = it },
-                onSelectDate = {
-                    selectedDate = it
-                }
+                onSelectDate = { selectedDate = it }
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalCalendar")
             }
@@ -239,14 +237,8 @@ fun HorizontalCalendar(
             pagerState.currentPage % 12 + 1,
             1
         )
+        onSelectDate(pagedMonth)
         changeMonth(pagedMonth)
-
-        val selected = if (YearMonth.from(pagedMonth) != currentYearMonth){
-            pagedMonth.withDayOfMonth(1)
-        } else {
-            pagedMonth.withDayOfMonth(currentDate.dayOfMonth)
-        }
-        onSelectDate(selected)
     }
 
     HorizontalPager(
@@ -261,7 +253,7 @@ fun HorizontalCalendar(
         CalendarGrid(
             modifier = Modifier.padding(horizontal = 10.dp),
             calendarDate = calendarDate,
-            selectedDate = if (page == pagerState.currentPage) selectedDate else null,
+            selectedDate = selectedDate,
             onSelectDate = onSelectDate
         ).also {
             DlogUtil.d(MyTag, "Recomposition HorizontalCalendar CalendarGrid")
@@ -278,38 +270,17 @@ fun HorizontalScheduler(
     selectedDate: LocalDate,
     onSelectDate: (LocalDate) -> Unit,
 ){
-    val month by rememberUpdatedState(monthDate)
-
-    val lastDay = month.lengthOfMonth() + 1
-    val prevMonth = month.minusMonths(1)
-    val nextMonth = month.plusMonths(1)
-
-    val days = (0..lastDay).toMutableList().map{
-        when (it) {
-            0 -> prevMonth
-            lastDay -> nextMonth
-            else -> month.withDayOfMonth(it)
-        }
+    val days = (1..monthDate.lengthOfMonth()).toList().map{
+        monthDate.withDayOfMonth(it)
     }
 
-    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth) { days.size }
+    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth - 1) { days.size }
 
     LaunchedEffect(schedulerState) {
-        snapshotFlow { schedulerState.currentPage }.collectLatest { currentPage ->
-            when (currentPage) {
-                in 1..month.lengthOfMonth() -> {
-                    val selected = days[currentPage]
-                    onSelectDate(selected)
-                }
-                else -> {
-                    // 처리 로직 추가
-                }
-            }
+        snapshotFlow { schedulerState.currentPage }.collect { currentPage ->
+            val date = days[currentPage]
+            onSelectDate(date)
         }
-    }
-
-    LaunchedEffect(selectedDate) {
-        schedulerState.scrollToPage(selectedDate.dayOfMonth)
     }
 
     HorizontalPager(
@@ -321,6 +292,10 @@ fun HorizontalScheduler(
         ){
             Text(text = "${days[page]}")
         }
+    }
+
+    LaunchedEffect(selectedDate){
+        schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
     }
 }
 
@@ -391,12 +366,10 @@ fun CalendarHeader(
 fun CalendarGrid(
     modifier: Modifier,
     calendarDate: LocalDate,
-    selectedDate: LocalDate?,
+    selectedDate: LocalDate,
 
     onSelectDate: (LocalDate) -> Unit
 ) {
-    val select by rememberUpdatedState(newValue = selectedDate)
-
     val lastDay = calendarDate.lengthOfMonth()
 
     // 현재 Month 의 Day LocalDate
@@ -465,7 +438,7 @@ fun CalendarGrid(
                 height = boxHeight,
                 displayDate = day,
                 isToday = day == currentDate,
-                isSelected = select?.compareTo(day) == 0,
+                isSelected = selectedDate.compareTo(day) == 0,
                 onSelectDate = onSelectDate
             )
         }
