@@ -54,6 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ljb.bumscheduler.DlogUtil
 import com.ljb.bumscheduler.MyTag
+import com.ljb.bumscheduler.currentDate
+import com.ljb.bumscheduler.formatMonth
+import com.ljb.bumscheduler.formatYearMonth
+import com.ljb.bumscheduler.initialPage
+import com.ljb.bumscheduler.yearRange
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
@@ -62,22 +67,8 @@ import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-
-private val formatMonth = DateTimeFormatter.ofPattern("M월")
-private val formatYearMonth = DateTimeFormatter.ofPattern("yyyy년 M월")
-
-val yearRange = IntRange(1970, 2100)
-
-// 현재 LocalDate
-val currentDate: LocalDate = LocalDate.now()
-val currentYearMonth: YearMonth = YearMonth.from(currentDate)
-
-// 현재 년도의 월 Page / HorizontalPager 의 page 는 0부터 시작, getMonthValue - 1을 해줘야 함
-val initialPage = (currentDate.year - yearRange.first) * 12 + currentDate.monthValue - 1
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
