@@ -6,23 +6,21 @@ import com.ljb.bumscheduler.base.UiState
 import java.time.LocalDate
 
 class CalendarReducer(state: CalendarState) : Reducer<CalendarState, CalendarUiEvent>(state) {
-    override fun reduce(oldState: CalendarState, event: CalendarUiEvent) {
-        when (event) {
+    override fun reduce(oldState: CalendarState, event: CalendarUiEvent): CalendarState {
+        return when (event) {
             is CalendarUiEvent.SelectDate -> {
-                val newState = oldState.copy(selectedDate = event.selectedDate)
-                setState(newState)
+                oldState.copy(selectedDate = event.selectedDate)
             }
 
             is CalendarUiEvent.ChangeMonth -> {
-                val newState = oldState.copy(
+                oldState.copy(
                     displayDate = event.changeMonth,
                     //schedulerDay = getMonthDay(event.changeMonth)
                 )
-                setState(newState)
             }
 
             is CalendarUiEvent.ScrollToToday -> {
-
+                oldState
             }
         }
     }
