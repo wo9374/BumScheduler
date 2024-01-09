@@ -1,25 +1,27 @@
 package com.ljb.bumscheduler.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.ljb.bumscheduler.CalendarUiEvent
-import com.ljb.bumscheduler.CalendarReducer
-import com.ljb.bumscheduler.CalendarState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 
 class CalendarViewModel: ViewModel() {
-    private val calendarReducer = CalendarReducer(CalendarState.init())
+    private var _displayMonth = MutableStateFlow(LocalDate.now())
+    val displayMonth get() = _displayMonth
 
-    val uiState get() = calendarReducer.uiState
+    private var _selectDate = MutableStateFlow(LocalDate.now())
+    val selectDate get() = _selectDate
 
-    private fun sendEvent(event: CalendarUiEvent){
-        calendarReducer.sendEvent(event)
+
+    fun change(changeMonth: LocalDate){
+        _displayMonth.update {
+            changeMonth
+        }
     }
 
-    fun changeMonth(changeMonth: LocalDate){
-        sendEvent(CalendarUiEvent.ChangeMonth(changeMonth))
-    }
-
-    fun selectDate(selectDate: LocalDate){
-        sendEvent(CalendarUiEvent.SelectDate(selectDate))
+    fun select(selectDate: LocalDate){
+        _selectDate.update {
+            selectDate
+        }
     }
 }

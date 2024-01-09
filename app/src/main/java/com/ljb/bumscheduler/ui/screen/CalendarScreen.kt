@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ljb.bumscheduler.DlogUtil
 import com.ljb.bumscheduler.MyTag
+import com.ljb.bumscheduler.allMonth
 import com.ljb.bumscheduler.currentDate
 import com.ljb.bumscheduler.formatMonth
 import com.ljb.bumscheduler.formatYearMonth
@@ -64,6 +66,7 @@ import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
 import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
+import com.ljb.bumscheduler.viewmodel.CalendarViewModel
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -72,13 +75,13 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun CalendarScreen() {
-
-    val scope = rememberCoroutineScope()
+fun CalendarScreen(viewModel: CalendarViewModel = CalendarViewModel()) {
 
     val pagerState = rememberPagerState(initialPage = initialPage) {
-        (yearRange.last - yearRange.first) * 12 // 모든 년도의 월 수 만큼 pageCount
+        allMonth
     }
+
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -93,6 +96,7 @@ fun CalendarScreen() {
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")
                     scope.launch {
+                        viewModel.select(currentDate)
                         pagerState.animateScrollToPage(initialPage)
                     }
                 }
@@ -106,30 +110,22 @@ fun CalendarScreen() {
         )
         {
 
-            var headerMonth by remember { mutableStateOf(currentDate) }     // 헤더에 보여줄 Month LocalDate
-
             CalendarHeader(
                 modifier = Modifier.padding(horizontal = 10.dp),
-                monthDate = headerMonth
+                viewModel = viewModel
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen CalendarHeader")
             }
 
-            var selectedDate by remember { mutableStateOf(headerMonth) }    // 선택된 Day LocalDate
-
             HorizontalCalendar(
                 pagerState = pagerState,
-                selectedDate = selectedDate,
-                changeMonth = { headerMonth = it },
-                onSelectDate = { selectedDate = it }
+                viewModel = viewModel
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalCalendar")
             }
 
             HorizontalScheduler(
-                monthDate = headerMonth,
-                selectedDate = selectedDate,
-                onSelectDate = { selectedDate = it },
+                viewModel = viewModel
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalScheduler")
             }
@@ -212,88 +208,10 @@ fun CalendarAppBar(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun HorizontalCalendar(
-    pagerState: PagerState,
-    selectedDate: LocalDate,
-
-    changeMonth: (LocalDate) -> Unit,
-    onSelectDate: (LocalDate) -> Unit,
-) {
-    // HorizontalPager 가 Paging 될 때 마다 호출
-    LaunchedEffect(pagerState.currentPage) {
-        val pagedMonth = LocalDate.of(
-            yearRange.first + pagerState.currentPage / 12,
-            pagerState.currentPage % 12 + 1,
-            1
-        )
-        onSelectDate(pagedMonth)
-        changeMonth(pagedMonth)
-    }
-
-    HorizontalPager(
-        state = pagerState,
-        verticalAlignment = Alignment.Top
-    ) { page ->
-
-        val year = yearRange.first + page / 12
-        val month = page % 12 + 1
-        val calendarDate = LocalDate.of(year, month, 1)
-
-        CalendarGrid(
-            modifier = Modifier.padding(horizontal = 10.dp),
-            calendarDate = calendarDate,
-            selectedDate = selectedDate,
-            onSelectDate = onSelectDate
-        ).also {
-            DlogUtil.d(MyTag, "Recomposition HorizontalCalendar CalendarGrid")
-        }
-    }.also {
-        DlogUtil.d(MyTag, "Recomposition HorizontalCalendar HorizontalPager")
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun HorizontalScheduler(
-    monthDate: LocalDate,
-    selectedDate: LocalDate,
-    onSelectDate: (LocalDate) -> Unit,
-){
-    val days = (1..monthDate.lengthOfMonth()).toList().map{
-        monthDate.withDayOfMonth(it)
-    }
-
-    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth - 1) { days.size }
-
-    LaunchedEffect(schedulerState) {
-        snapshotFlow { schedulerState.currentPage }.collect { currentPage ->
-            val date = days[currentPage]
-            onSelectDate(date)
-        }
-    }
-
-    HorizontalPager(
-        state = schedulerState
-    ){ page ->
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ){
-            Text(text = "${days[page]}")
-        }
-    }
-
-    LaunchedEffect(selectedDate){
-        schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
-    }
-}
-
 @Composable
 fun CalendarHeader(
     modifier: Modifier,
-    monthDate: LocalDate
+    viewModel: CalendarViewModel
 ) {
     Column(
         modifier = modifier
@@ -301,6 +219,7 @@ fun CalendarHeader(
             .padding(bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val monthDate by viewModel.displayMonth.collectAsState()
 
         // 현재 년도면 월만 표시
         val displayMonth = if (monthDate.year == currentDate.year) {
@@ -353,14 +272,86 @@ fun CalendarHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HorizontalCalendar(
+    pagerState: PagerState,
+    viewModel: CalendarViewModel
+) {
+    LaunchedEffect(viewModel.displayMonth){
+        snapshotFlow { pagerState.currentPage }.collect {
+            val pagedMonth = LocalDate.of(
+                yearRange.first + it / 12,
+                it % 12 + 1,
+                1
+            )
+            viewModel.change(pagedMonth)
+        }
+    }
+
+    HorizontalPager(
+        state = pagerState,
+        verticalAlignment = Alignment.Top
+    ) { page ->
+
+        val year = yearRange.first + page / 12
+        val month = page % 12 + 1
+        val calendarDate = LocalDate.of(year, month, 1)
+
+        CalendarGrid(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            viewModel = viewModel,
+            calendarDate = calendarDate,
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HorizontalScheduler(
+    viewModel: CalendarViewModel
+){
+    val monthDate = viewModel.displayMonth.collectAsState().value
+    val selectedDate = viewModel.selectDate.collectAsState().value
+
+    val days = (1..monthDate.lengthOfMonth()).toList().map{
+        monthDate.withDayOfMonth(it)
+    }
+
+    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth - 1) { days.size }
+
+    HorizontalPager(
+        state = schedulerState
+    ){ page ->
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ){
+            Text(text = "${days[page]}")
+        }
+    }
+
+    LaunchedEffect(selectedDate){
+        schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
+    }
+
+    LaunchedEffect(monthDate) {
+        snapshotFlow { schedulerState.currentPage }.collect { currentPage ->
+            val date = days[currentPage]
+            viewModel.select(date)
+            DlogUtil.d(MyTag, "date : $date")
+        }
+    }
+}
+
 @Composable
 fun CalendarGrid(
     modifier: Modifier,
+    viewModel: CalendarViewModel,
     calendarDate: LocalDate,
-    selectedDate: LocalDate,
-
-    onSelectDate: (LocalDate) -> Unit
 ) {
+    val selectedDate by viewModel.selectDate.collectAsState()
+
     val lastDay = calendarDate.lengthOfMonth()
 
     // 현재 Month 의 Day LocalDate
@@ -430,7 +421,9 @@ fun CalendarGrid(
                 displayDate = day,
                 isToday = day == currentDate,
                 isSelected = selectedDate.compareTo(day) == 0,
-                onSelectDate = onSelectDate
+                onSelectDate = {
+                    viewModel.select(it)
+                }
             )
         }
 
@@ -594,6 +587,14 @@ fun CalendarAppBar() {
     )
 }
 
+@Preview(showBackground = true)
+@Composable
+fun CalendarHeaderPreview() {
+    CalendarHeader(
+        Modifier.padding(horizontal = 10.dp),
+        viewModel = CalendarViewModel(),
+    )
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Preview(showBackground = true)
@@ -601,32 +602,17 @@ fun CalendarAppBar() {
 fun HorizontalCalendarPreview() {
     HorizontalCalendar(
         pagerState = rememberPagerState(initialPage = 2) { 3 },
-        selectedDate = currentDate,
-        changeMonth = { },
-        onSelectDate = { }
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CalendarHeaderPreview() {
-    CalendarHeader(
-        Modifier.padding(horizontal = 10.dp),
-        currentDate
+        viewModel = CalendarViewModel(),
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CalendarGridPreview() {
-    var selectedDate by remember { mutableStateOf(currentDate) }
     CalendarGrid(
         modifier = Modifier.padding(horizontal = 10.dp),
-        currentDate,
-        selectedDate,
-        onSelectDate = { date ->
-            selectedDate = date
-        }
+        viewModel = CalendarViewModel(),
+        calendarDate = currentDate,
     )
 }
 
