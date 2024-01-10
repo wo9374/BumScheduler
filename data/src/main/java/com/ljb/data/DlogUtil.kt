@@ -1,4 +1,4 @@
-package com.ljb.bumscheduler
+package com.ljb.data
 
 import android.util.Log
 

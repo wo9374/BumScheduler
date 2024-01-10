@@ -9,5 +9,6 @@ java {
 }
 
 dependencies {
-
+    implementation(Lib.Kotlin.coroutine)
+    implementation(Lib.Dagger.javax)
 }

@@ -37,10 +37,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,20 +51,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ljb.bumscheduler.DlogUtil
-import com.ljb.bumscheduler.MyTag
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ljb.data.DlogUtil
+import com.ljb.data.MyTag
 import com.ljb.bumscheduler.allMonth
 import com.ljb.bumscheduler.currentDate
 import com.ljb.bumscheduler.formatMonth
 import com.ljb.bumscheduler.formatYearMonth
 import com.ljb.bumscheduler.initialPage
-import com.ljb.bumscheduler.yearRange
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
 import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
+import com.ljb.bumscheduler.yearRange
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -75,11 +74,11 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun CalendarScreen(viewModel: CalendarViewModel = CalendarViewModel()) {
+fun CalendarScreen(
+    viewModel: CalendarViewModel = hiltViewModel()
+) {
 
-    val pagerState = rememberPagerState(initialPage = initialPage) {
-        allMonth
-    }
+    val pagerState = rememberPagerState(initialPage = initialPage)
 
     val scope = rememberCoroutineScope()
 
@@ -92,6 +91,7 @@ fun CalendarScreen(viewModel: CalendarViewModel = CalendarViewModel()) {
                 },
                 searchClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Search Clicked")
+                    viewModel.getHoliday(currentDate.year.toString(), "")
                 },
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")
@@ -291,6 +291,7 @@ fun HorizontalCalendar(
 
     HorizontalPager(
         state = pagerState,
+        pageCount = allMonth,
         verticalAlignment = Alignment.Top
     ) { page ->
 
@@ -318,10 +319,11 @@ fun HorizontalScheduler(
         monthDate.withDayOfMonth(it)
     }
 
-    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth - 1) { days.size }
+    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth - 1)
 
     HorizontalPager(
-        state = schedulerState
+        state = schedulerState,
+        pageCount = days.size
     ){ page ->
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -591,8 +593,8 @@ fun CalendarAppBar() {
 @Composable
 fun CalendarHeaderPreview() {
     CalendarHeader(
-        Modifier.padding(horizontal = 10.dp),
-        viewModel = CalendarViewModel(),
+        modifier = Modifier.padding(horizontal = 10.dp),
+        viewModel = hiltViewModel()
     )
 }
 
@@ -601,8 +603,8 @@ fun CalendarHeaderPreview() {
 @Composable
 fun HorizontalCalendarPreview() {
     HorizontalCalendar(
-        pagerState = rememberPagerState(initialPage = 2) { 3 },
-        viewModel = CalendarViewModel(),
+        pagerState = rememberPagerState(initialPage = 2),
+        viewModel = hiltViewModel(),
     )
 }
 
@@ -611,7 +613,7 @@ fun HorizontalCalendarPreview() {
 fun CalendarGridPreview() {
     CalendarGrid(
         modifier = Modifier.padding(horizontal = 10.dp),
-        viewModel = CalendarViewModel(),
+        viewModel = hiltViewModel(),
         calendarDate = currentDate,
     )
 }

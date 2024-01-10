@@ -1,16 +1,21 @@
 
 object Versions {
-    const val hilt = "2.49"
-    const val koin = "3.4.0"
+    const val kotlin = "1.9.21"
+    const val coroutine = "1.7.1"
 
     /**
-    * Use build.gradle (:project)
-    * id("com.google.devtools.ksp") version Versions.ksp apply false
-    *
-    * Use build.gradle (:app) plugins
-    * id("com.google.devtools.ksp")
-    * */
+     * 사용시 코틀린 버전과 같거나 이하여야 함
+     *
+     * (:project)
+     * id("com.google.devtools.ksp") version Versions.ksp apply false
+     *
+     * (:app) plugins
+     * id("com.google.devtools.ksp")
+     * */
     const val ksp = "1.9.21-1.0.15"
+
+    const val hilt = "2.49"
+    const val koin = "3.4.0"
 
     const val dataStore = "1.0.0"
     const val room = "2.6.1"
@@ -38,6 +43,7 @@ object Lib {
         const val viewModel = "androidx.lifecycle:lifecycle-viewmodel-ktx:${Versions.viewmodel}"
         const val paging = "androidx.paging:paging-runtime:${Versions.paging}"
     }
+
     object DataStore {
         const val preferencesStore = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
         const val protoStore = "androidx.datastore:datastore:${Versions.dataStore}"
@@ -58,13 +64,12 @@ object Lib {
         const val cio = "io.ktor:ktor-client-cio:${Versions.ktor}"                          //JVM, Android 및 Native 플랫폼에서 사용할 수 있는 완전 비동기식 코루틴 기반 엔진
         const val logging = "io.ktor:ktor-client-logging-jvm:${Versions.ktor}"              //HTTP Request을 로깅하기 위해 사용
         const val contentNegotiation = "io.ktor:ktor-client-content-negotiation:${Versions.ktor}"  //직렬화/역직렬화를 위한 ContentNegotiation
-        const val serializationJson = "io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}"    //Serialization json
-        const val serializationXml = "io.ktor:ktor-serialization-kotlinx-xml:${Versions.ktor}"      //Serialization XML
+        const val serializationJson = "io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}"    //Json 직렬화
+        const val serializationXml = "io.ktor:ktor-serialization-kotlinx-xml:${Versions.ktor}"      //XML 직렬화
     }
 
     object Serialization {
-        const val json =
-            "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.21"          //Multi Platform Serialization
+        const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2"          //Entity 직렬화
     }
 
     object Retrofit {
@@ -93,10 +98,12 @@ object Lib {
         object Koin{
             const val core = "io.insert-koin:koin-android:${Versions.koin}"
         }
+
+        const val javax = "javax.inject:javax.inject:1"
     }
 
     object Kotlin {
-        const val coroutine = "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
+        const val coroutine = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutine}"
     }
 
     object Google {
@@ -116,12 +123,20 @@ object Lib {
 }
 
 
-
 object ComposeVersion {
+    const val composeCompile = "1.5.7"
+
     const val navigation = "2.7.6"
+    const val hiltNavigation = "1.1.0"
 }
 
 object LibCompose {
-    const val navigation = "androidx.navigation:navigation-compose:${ComposeVersion.navigation}"
-    const val paging = "androidx.paging:paging-compose:${Versions.paging}"
+    object Android{
+        const val navigation = "androidx.navigation:navigation-compose:${ComposeVersion.navigation}"
+        const val paging = "androidx.paging:paging-compose:${Versions.paging}"
+    }
+
+    object Hilt{
+        const val navigation = "androidx.hilt:hilt-navigation-compose:${ComposeVersion.hiltNavigation}"
+    }
 }
