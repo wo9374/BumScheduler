@@ -30,7 +30,7 @@ class HolidayDataSourceImpl @Inject constructor(
     override suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<KtorResponse> {
         return try {
             httpClient.get("SpcdeInfoService/getHoliDeInfo") {
-                parameter("ServiceKey", BuildConfig.DATA_API_KEY)
+                parameter("ServiceKey", BuildConfig.DATA_API_KEY_DECODE)
                 parameter("_type", "json")
                 parameter("numOfRows", "100")
                 parameter("solYear", solYear)

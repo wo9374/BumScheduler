@@ -19,7 +19,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
 
-        buildConfigField("String", "DATA_API_KEY", gradleLocalProperties(rootDir).getProperty("data_api_key_encode"))
+        buildConfigField("String", "DATA_API_KEY_ENCODE", gradleLocalProperties(rootDir).getProperty("data_api_key_encode"))
+        buildConfigField("String", "DATA_API_KEY_DECODE", gradleLocalProperties(rootDir).getProperty("data_api_key_decode"))
     }
 
     buildTypes {

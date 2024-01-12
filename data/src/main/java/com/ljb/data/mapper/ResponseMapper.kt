@@ -4,7 +4,9 @@ import com.ljb.data.model.KtorResponse
 import com.ljb.domain.model.Holiday
 import com.ljb.domain.model.status.ApiResult
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
+val formatString: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 object ResponseMapper {
     fun responseToHoliday(response: ApiResult<KtorResponse>): ApiResult<List<Holiday>> {
         return when(response) {
@@ -12,7 +14,7 @@ object ResponseMapper {
             is ApiResult.Success -> {
                 val holiday = response.data.response.body.items.item.map {
                     Holiday(
-                        localDate = LocalDate.parse(it.locdate),
+                        localDate = LocalDate.parse(it.locdate, formatString),
                         dateName = it.dateName,
                         isHoliday = it.isHoliday == "Y"
                     )
