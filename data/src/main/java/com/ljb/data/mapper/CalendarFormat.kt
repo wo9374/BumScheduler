@@ -1,16 +1,20 @@
-package com.ljb.bumscheduler
+package com.ljb.data.mapper
 
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 val formatMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("M월")
 val formatYearMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy년 M월")
+val formatString: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
 val yearRange = IntRange(1970, 2100)
 val currentDate: LocalDate = LocalDate.now()
+val currentYearMonth: YearMonth = YearMonth.now()
 
 val initialPage = (currentDate.year - yearRange.first) * 12 + currentDate.monthValue - 1
 val allMonth: Int = (yearRange.last - yearRange.first) * 12
+
 
 
 // 1970 ~ 2100 년 까지의 모든 월의 List

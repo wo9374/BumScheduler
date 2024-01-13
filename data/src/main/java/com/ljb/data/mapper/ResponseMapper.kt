@@ -1,25 +1,29 @@
 package com.ljb.data.mapper
 
-import com.ljb.data.model.KtorResponse
-import com.ljb.domain.model.Holiday
+import com.ljb.data.model.HolidayData
+import com.ljb.domain.model.HolidayItem
 import com.ljb.domain.model.status.ApiResult
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
-val formatString: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 object ResponseMapper {
-    fun responseToHoliday(response: ApiResult<KtorResponse>): ApiResult<List<Holiday>> {
+    fun responseToHoliday(response: ApiResult<HolidayData>): ApiResult<HolidayItem> {
         return when(response) {
             is ApiResult.Loading -> ApiResult.Loading
             is ApiResult.Success -> {
-                val holiday = response.data.response.body.items.item.map {
-                    Holiday(
-                        localDate = LocalDate.parse(it.locdate, formatString),
+
+                val list = response.data.holidays.map {
+                    HolidayItem.Holiday(
+                        localDate = LocalDate.parse(it.locdate.toString(), formatString),
                         dateName = it.dateName,
                         isHoliday = it.isHoliday == "Y"
                     )
                 }
-                ApiResult.Success(holiday)
+
+                val item = HolidayItem(
+                    holidays = list,
+                    year = response.data.year
+                )
+                ApiResult.Success(item)
             }
             is ApiResult.ApiError -> ApiResult.ApiError(response.message, response.code)
             is ApiResult.NetworkError -> ApiResult.NetworkError(response.throwable)

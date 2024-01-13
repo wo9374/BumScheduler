@@ -1,13 +1,18 @@
 package com.ljb.data.remote.datasource
 
 import com.ljb.data.BuildConfig
-import com.ljb.data.model.KtorResponse
+import com.ljb.data.model.HolidayData
+import com.ljb.data.model.HolidayResponse
 import com.ljb.domain.model.status.ApiResult
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 
 object HolidayApiInfo{
@@ -16,7 +21,7 @@ object HolidayApiInfo{
 }
 
 interface HolidayDataSource {
-    suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<KtorResponse>
+    suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<HolidayData>
 }
 
 
@@ -27,7 +32,7 @@ interface HolidayDataSource {
 class HolidayDataSourceImpl @Inject constructor(
     private val httpClient: HttpClient
 ) : HolidayDataSource{
-    override suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<KtorResponse> {
+    override suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<HolidayData> {
         return try {
             httpClient.get("SpcdeInfoService/getHoliDeInfo") {
                 parameter("ServiceKey", BuildConfig.DATA_API_KEY_DECODE)
@@ -37,8 +42,11 @@ class HolidayDataSourceImpl @Inject constructor(
                 parameter("solMonth", solMonth)
             }.run {
                 if (status.isSuccess()){
-                    val response = body<KtorResponse>()
-                    ApiResult.Success(response)
+                    val holidayItem = deserializationJsonString(
+                        solYear = solYear,
+                        jsonString = bodyAsText()
+                    )
+                    ApiResult.Success(holidayItem)
                 }else{
                     ApiResult.ApiError(status.description, status.value)
                 }
@@ -47,5 +55,26 @@ class HolidayDataSourceImpl @Inject constructor(
         } catch (e: Exception) {
             ApiResult.NetworkError(e)
         }
+    }
+
+    private fun deserializationJsonString(solYear: String, jsonString: String) : HolidayData {
+        // JSON 문자열을 JsonElement로 변환
+        val jsonElement: JsonElement = Json.parseToJsonElement(jsonString)
+
+        // 필요한 body 데이터에 접근
+        val bodyJsonObject =
+            jsonElement.jsonObject["response"]?.jsonObject?.get("body")?.jsonObject
+
+        // HolidayItem 클래스로 역직렬화
+        val holidayItem = bodyJsonObject?.let {
+            val itemElement = it["items"]?.jsonObject?.get("item")  //items 안 [] jsonObject 감싸져 있음
+            val holidayList = itemElement?.let { element ->
+                Json.decodeFromJsonElement(element)
+            } ?: listOf<HolidayResponse>()
+
+            HolidayData(holidayList, solYear)
+        } ?: HolidayData(emptyList(), solYear)
+
+        return holidayItem
     }
 }

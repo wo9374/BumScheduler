@@ -2,7 +2,7 @@ package com.ljb.data.remote.repository
 
 import com.ljb.data.mapper.ResponseMapper
 import com.ljb.data.remote.datasource.HolidayDataSource
-import com.ljb.domain.model.Holiday
+import com.ljb.domain.model.HolidayItem
 import com.ljb.domain.model.status.ApiResult
 import com.ljb.domain.repository.RemoteHolidayRepository
 import kotlinx.coroutines.flow.Flow
@@ -12,12 +12,12 @@ import javax.inject.Singleton
 
 @Singleton
 class RemoteHolidayRepositoryImpl @Inject constructor(
-    private val holidayInterface: HolidayDataSource
+    private val holidayDataSource: HolidayDataSource
 ) : RemoteHolidayRepository {
 
-    override fun getHoliday(solYear: String, solMonth: String): Flow<ApiResult<List<Holiday>>> =
+    override fun getHoliday(solYear: String, solMonth: String): Flow<ApiResult<HolidayItem>> =
         flow {
-            holidayInterface.getHoliday(solYear = solYear, solMonth = solMonth).run {
+            holidayDataSource.getHoliday(solYear = solYear, solMonth = solMonth).run {
                 emit(
                     ResponseMapper.responseToHoliday(this)
                 )

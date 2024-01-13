@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ljb.data.DlogUtil
 import com.ljb.data.MyTag
-import com.ljb.domain.model.Holiday
+import com.ljb.domain.model.HolidayItem
 import com.ljb.domain.model.status.ApiResult
 import com.ljb.domain.usecase.GetHolidayUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,7 +32,7 @@ class CalendarViewModel @Inject constructor(
     fun select(selectDate: LocalDate){ _selectDate.update { selectDate } }
 
 
-    private var _holiday: MutableStateFlow<List<Holiday>> = MutableStateFlow(emptyList())
+    private var _holiday: MutableStateFlow<List<HolidayItem.Holiday>> = MutableStateFlow(emptyList())
     val holiday get() = _holiday
 
     fun getHoliday(solYear: String, solMonth: String){
@@ -43,7 +43,7 @@ class CalendarViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         _holiday.update {
                             DlogUtil.d(MyTag, "getHoliday Result ${result.data}")
-                            result.data
+                            result.data.holidays
                         }
                     }
                     is ApiResult.ApiError -> {}
