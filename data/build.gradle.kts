@@ -63,4 +63,8 @@ dependencies {
     implementation(Lib.Ktor.contentNegotiation)
 
     implementation(Lib.Serialization.json)
+
+    implementation(Lib.Room.core)
+    ksp(Lib.Room.compiler)
+    implementation(Lib.Room.ktx)
 }

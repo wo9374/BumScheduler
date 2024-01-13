@@ -91,7 +91,7 @@ fun CalendarScreen(
                 },
                 searchClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Search Clicked")
-                    viewModel.getHoliday(currentDate.year.toString(), "")
+                    viewModel.getHoliday(currentDate.year.toString())
                 },
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")

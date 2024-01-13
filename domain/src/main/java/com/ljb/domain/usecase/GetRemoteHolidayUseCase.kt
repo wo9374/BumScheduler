@@ -5,8 +5,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GetHolidayUseCase @Inject constructor(
+class GetRemoteHolidayUseCase @Inject constructor(
     private val remoteHolidayRepository: RemoteHolidayRepository
-){
-    operator fun invoke(solYear: String, solMonth: String) = remoteHolidayRepository.getHoliday(solYear, solMonth)
+) {
+    operator fun invoke(solYear: String, solMonth: String) =
+        remoteHolidayRepository.getHoliday(solYear, solMonth)
 }

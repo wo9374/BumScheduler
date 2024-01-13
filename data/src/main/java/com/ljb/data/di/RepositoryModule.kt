@@ -1,7 +1,10 @@
 package com.ljb.data.di
 
-import com.ljb.data.remote.datasource.HolidayDataSourceImpl
-import com.ljb.data.remote.repository.RemoteHolidayRepositoryImpl
+import com.ljb.data.datasource.LocalHolidaySourceImpl
+import com.ljb.data.datasource.RemoteHolidaySourceImpl
+import com.ljb.data.repository.LocalHolidayRepositoryImpl
+import com.ljb.data.repository.RemoteHolidayRepositoryImpl
+import com.ljb.domain.repository.LocalHolidayRepository
 import com.ljb.domain.repository.RemoteHolidayRepository
 import dagger.Module
 import dagger.Provides
@@ -15,6 +18,11 @@ class RepositoryModule {
 
     @Provides
     @Singleton
-    fun bindRemoteHolidayRepository(holidayDataSourceImpl: HolidayDataSourceImpl): RemoteHolidayRepository =
+    fun provideRemoteHolidayRepository(holidayDataSourceImpl: RemoteHolidaySourceImpl): RemoteHolidayRepository =
         RemoteHolidayRepositoryImpl(holidayDataSourceImpl)
+
+    @Provides
+    @Singleton
+    fun provideLocalHolidayRepository(localHolidaySourceImpl: LocalHolidaySourceImpl): LocalHolidayRepository =
+        LocalHolidayRepositoryImpl(localHolidaySourceImpl)
 }
