@@ -5,40 +5,39 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import java.time.LocalDate
+
+@Serializable
+data class HolidayResponse(
+    @SerialName("dateName") val dateName: String,
+    @SerialName("isHoliday") val isHoliday: String,
+    @SerialName("locdate") val locdate: Int
+) {
+    @kotlinx.serialization.Transient
+    @SerialName("dateKind")
+    val dateKind: String = ""
+
+    @kotlinx.serialization.Transient
+    @SerialName("seq")
+    val seq: Int = 0
+}
 
 @Entity(tableName = "holidays")
-data class HolidayResponse(
-    @PrimaryKey
+data class HolidayRoomEntity(
     val year: String,
-    val holidays: List<HolidayData>,
+    @PrimaryKey val localDate: LocalDate,
+    val dateName: String,
+    val isHoliday: Boolean,
 ){
-    @Serializable
-    data class HolidayData(
-        @SerialName("dateName") val dateName: String,
-        @SerialName("isHoliday") val isHoliday: String,
-        @SerialName("locdate") val locdate: Int
-    ) {
-        @kotlinx.serialization.Transient
-        @SerialName("dateKind")
-        val dateKind: String = ""
-
-        @kotlinx.serialization.Transient
-        @SerialName("seq")
-        val seq: Int = 0
-    }
-
-    // TypeConverter를 사용하여 HolidayData를 문자열로 변환
-    class Converters {
+    class LocalDateConverters {
         @TypeConverter
-        fun fromHolidayDataList(holidays: List<HolidayData>): String {
-            return Json.encodeToString(holidays)
+        fun fromLocalDate(localDate: LocalDate?): Long? {
+            return localDate?.toEpochDay()
         }
 
         @TypeConverter
-        fun toHolidayDataList(json: String): List<HolidayData> {
-            return Json.decodeFromString(json)
+        fun toLocalDate(epochDay: Long?): LocalDate? {
+            return epochDay?.let { LocalDate.ofEpochDay(it) }
         }
     }
 }

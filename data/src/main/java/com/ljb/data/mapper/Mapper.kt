@@ -1,31 +1,31 @@
 package com.ljb.data.mapper
 
 import com.ljb.data.model.HolidayResponse
-import com.ljb.domain.model.HolidayItem
+import com.ljb.data.model.HolidayRoomEntity
+import com.ljb.domain.model.Holiday
 import java.time.LocalDate
 
-fun HolidayResponse.mapperToHolidayItem(): HolidayItem {
-    return HolidayItem(
-        holidays = holidays.map {
-            HolidayItem.Holiday(
-                localDate = LocalDate.parse(it.locdate.toString(), formatString),
-                dateName = it.dateName,
-                isHoliday = it.isHoliday == "Y"
-            )
-        },
-        year = year
+fun HolidayResponse.mapperToHoliday(): Holiday {
+    return Holiday(
+        localDate = LocalDate.parse(locdate.toString(), formatString),
+        dateName = dateName,
+        isHoliday = isHoliday == "Y"
     )
 }
 
-fun HolidayItem.mapperToHolidayResponse(): HolidayResponse {
-    return HolidayResponse(
-        holidays = holidays.map {
-            HolidayResponse.HolidayData(
-                locdate = it.localDate.format(formatString).toInt(),
-                dateName = it.dateName,
-                isHoliday = if (it.isHoliday) "Y" else "N"
-            )
-        },
-        year = year
+fun HolidayRoomEntity.mapperToHoliday(): Holiday {
+    return Holiday(
+        localDate = localDate,
+        dateName = dateName,
+        isHoliday = isHoliday
+    )
+}
+
+fun Holiday.mapperToHolidayResponse(): HolidayRoomEntity {
+    return HolidayRoomEntity(
+        localDate = localDate,
+        isHoliday = isHoliday,
+        dateName = dateName,
+        year = ""
     )
 }

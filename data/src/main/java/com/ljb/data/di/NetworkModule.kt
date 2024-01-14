@@ -3,7 +3,6 @@ package com.ljb.data.di
 import android.util.Log
 import com.ljb.data.DlogUtil
 import com.ljb.data.MyTag
-import com.ljb.data.datasource.HolidayApiInfo
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,6 +22,11 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
+object HolidayApiInfo {
+    const val HOST = "apis.data.go.kr"
+    const val PATH = "/B090041/openapi/service/"
+}
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -30,7 +34,7 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideHttpClient(): HttpClient {
-        return HttpClient(Android){
+        return HttpClient(Android) {
             expectSuccess = true        //응답 유효성 검사 true/false
 
             defaultRequest {
@@ -52,18 +56,21 @@ object NetworkModule {
                 )
             }
 
-            install(Logging){
+            install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
                         Log.v("Ktor Logger", message)
                     }
                 }
-                level= LogLevel.ALL
+                level = LogLevel.ALL
             }
 
             install(ResponseObserver) {
                 onResponse { response ->
-                    DlogUtil.d(MyTag, "HTTP status: ${response.status.value} ${response.bodyAsText()}")
+                    DlogUtil.d(
+                        MyTag,
+                        "HTTP status: ${response.status.value} ${response.bodyAsText()}"
+                    )
                 }
             }
         }

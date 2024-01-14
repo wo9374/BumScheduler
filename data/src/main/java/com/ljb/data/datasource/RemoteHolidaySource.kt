@@ -14,13 +14,8 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 
-object HolidayApiInfo {
-    const val HOST = "apis.data.go.kr"
-    const val PATH = "/B090041/openapi/service/"
-}
-
 interface RemoteHolidaySource {
-    suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<HolidayResponse>
+    suspend fun getHoliday(solYear: String): ApiResult<List<HolidayResponse>>
 }
 
 
@@ -31,20 +26,18 @@ interface RemoteHolidaySource {
 class RemoteHolidaySourceImpl @Inject constructor(
     private val httpClient: HttpClient
 ) : RemoteHolidaySource {
-    override suspend fun getHoliday(solYear: String, solMonth: String): ApiResult<HolidayResponse> {
+
+    override suspend fun getHoliday(solYear: String): ApiResult<List<HolidayResponse>> {
         return try {
             httpClient.get("SpcdeInfoService/getHoliDeInfo") {
                 parameter("ServiceKey", BuildConfig.DATA_API_KEY_DECODE)
                 parameter("_type", "json")
                 parameter("numOfRows", "100")
                 parameter("solYear", solYear)
-                parameter("solMonth", solMonth)
+                //parameter("solMonth", solMonth)
             }.run {
                 if (status.isSuccess()) {
-                    val holidayItem = deserializationJsonString(
-                        solYear = solYear,
-                        jsonString = bodyAsText()
-                    )
+                    val holidayItem = deserializationJsonString(jsonString = bodyAsText())
                     ApiResult.Success(holidayItem)
                 } else {
                     ApiResult.ApiError(status.description, status.value)
@@ -56,7 +49,7 @@ class RemoteHolidaySourceImpl @Inject constructor(
         }
     }
 
-    private fun deserializationJsonString(solYear: String, jsonString: String): HolidayResponse {
+    private fun deserializationJsonString(jsonString: String): List<HolidayResponse> {
         // JSON 문자열을 JsonElement로 변환
         val jsonElement: JsonElement = Json.parseToJsonElement(jsonString)
 
@@ -65,15 +58,13 @@ class RemoteHolidaySourceImpl @Inject constructor(
             jsonElement.jsonObject["response"]?.jsonObject?.get("body")?.jsonObject
 
         // HolidayItem 클래스로 역직렬화
-        val holidayResponseItem = bodyJsonObject?.let {
+        val list = bodyJsonObject?.let {
             val itemElement = it["items"]?.jsonObject?.get("item")  //items 안 [] jsonObject 감싸져 있음
-            val holidayList = itemElement?.let { element ->
+            itemElement?.let { element ->
                 Json.decodeFromJsonElement(element)
-            } ?: listOf<HolidayResponse.HolidayData>()
+            } ?: listOf<HolidayResponse>()
+        } ?: emptyList()
 
-            HolidayResponse(solYear, holidayList)
-        } ?: HolidayResponse(solYear, emptyList())
-
-        return holidayResponseItem
+        return list
     }
 }
