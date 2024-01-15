@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ljb.data.DlogUtil
 import com.ljb.data.MyTag
 import com.ljb.domain.model.Holiday
+import com.ljb.domain.model.status.ApiResult
 import com.ljb.domain.usecase.GetLocalHolidayUseCase
 import com.ljb.domain.usecase.GetRemoteHolidayUseCase
 import com.ljb.domain.usecase.InsertHolidayUseCase
@@ -19,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val getHolidayUseCase: GetRemoteHolidayUseCase,
+    private val getRemoteHolidayUseCase: GetRemoteHolidayUseCase,
     private val getLocalHolidayUseCase: GetLocalHolidayUseCase,
     private val insertHolidayUseCase: InsertHolidayUseCase,
 ) : ViewModel() {
@@ -38,29 +39,38 @@ class CalendarViewModel @Inject constructor(
     }
 
 
-    private lateinit var _holiday: MutableSharedFlow<List<Holiday>>
+    private var _holiday = MutableStateFlow<List<Holiday>>(emptyList())
     val holiday get() = _holiday
 
 
     fun getHoliday(solYear: String) {
         viewModelScope.launch {
-            getLocalHolidayUseCase(solYear).distinctUntilChanged().collect {
-                DlogUtil.d(MyTag, "getHoliday Result $it")
-            }
+            getLocalHolidayUseCase(solYear).distinctUntilChanged().collect { localList ->
+                DlogUtil.d(MyTag, "localList : $localList")
+                if (localList.isEmpty()){
+                    getRemoteHolidayUseCase(solYear).distinctUntilChanged().collect { result ->
+                        when(result){
+                            is ApiResult.Loading -> {}
+                            is ApiResult.Success -> {
+                                _holiday.update {
+                                    DlogUtil.d(MyTag, "remoteHolidayList : ${result.data}")
+                                    result.data
+                                }
 
-            /*getHolidayUseCase(solYear, solMonth).distinctUntilChanged().collect { result ->
-                when(result){
-                    is ApiResult.Loading -> {}
-                    is ApiResult.Success -> {
-                        _holiday.update {
-                            DlogUtil.d(MyTag, "getHoliday Result ${result.data}")
-                            result.data.holidays
+                                result.data.forEach {
+                                    insertHolidayUseCase(it)
+                                }
+                            }
+                            is ApiResult.ApiError -> {}
+                            is ApiResult.NetworkError -> {}
                         }
                     }
-                    is ApiResult.ApiError -> {}
-                    is ApiResult.NetworkError -> {}
+                } else {
+                    _holiday.update {
+                        localList
+                    }
                 }
-            }*/
+            }
         }
     }
 }

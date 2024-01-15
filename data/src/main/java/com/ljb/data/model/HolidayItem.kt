@@ -9,18 +9,12 @@ import java.time.LocalDate
 
 @Serializable
 data class HolidayResponse(
+    @SerialName("dateKind") val dateKind: String,
     @SerialName("dateName") val dateName: String,
     @SerialName("isHoliday") val isHoliday: String,
-    @SerialName("locdate") val locdate: Int
-) {
-    @kotlinx.serialization.Transient
-    @SerialName("dateKind")
-    val dateKind: String = ""
-
-    @kotlinx.serialization.Transient
-    @SerialName("seq")
-    val seq: Int = 0
-}
+    @SerialName("locdate") val locdate: Int,
+    @SerialName("seq") val seq: Int
+)
 
 @Entity(tableName = "holidays")
 data class HolidayRoomEntity(

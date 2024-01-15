@@ -1,6 +1,8 @@
 package com.ljb.data.datasource
 
 import com.ljb.data.BuildConfig
+import com.ljb.data.DlogUtil
+import com.ljb.data.MyTag
 import com.ljb.data.model.HolidayResponse
 import com.ljb.domain.model.status.ApiResult
 import io.ktor.client.HttpClient
@@ -11,6 +13,7 @@ import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 
@@ -37,6 +40,7 @@ class RemoteHolidaySourceImpl @Inject constructor(
                 //parameter("solMonth", solMonth)
             }.run {
                 if (status.isSuccess()) {
+                    DlogUtil.d(MyTag, "bodyAsText : ${bodyAsText()}")
                     val holidayItem = deserializationJsonString(jsonString = bodyAsText())
                     ApiResult.Success(holidayItem)
                 } else {
@@ -50,21 +54,28 @@ class RemoteHolidaySourceImpl @Inject constructor(
     }
 
     private fun deserializationJsonString(jsonString: String): List<HolidayResponse> {
-        // JSON 문자열을 JsonElement로 변환
-        val jsonElement: JsonElement = Json.parseToJsonElement(jsonString)
+        return try {
+            // JSON 문자열을 JsonElement로 변환
+            val jsonElement: JsonElement = Json.parseToJsonElement(jsonString)
 
-        // 필요한 body 데이터에 접근
-        val bodyJsonObject =
-            jsonElement.jsonObject["response"]?.jsonObject?.get("body")?.jsonObject
+            // 필요한 body 데이터에 접근
+            val bodyJsonObject = jsonElement.jsonObject["response"]?.jsonObject?.get("body")?.jsonObject
 
-        // HolidayItem 클래스로 역직렬화
-        val list = bodyJsonObject?.let {
-            val itemElement = it["items"]?.jsonObject?.get("item")  //items 안 [] jsonObject 감싸져 있음
-            itemElement?.let { element ->
-                Json.decodeFromJsonElement(element)
-            } ?: listOf<HolidayResponse>()
-        } ?: emptyList()
+            // HolidayResponse 클래스로 역직렬화
+            val list = bodyJsonObject?.let {
+                val itemsObject = it["items"]?.jsonObject
+                val itemArray = itemsObject?.get("item")?.jsonArray
 
-        return list
+                itemArray?.map { element ->
+                    Json.decodeFromJsonElement(element)
+                }
+            } ?: emptyList<HolidayResponse>()
+
+            return list
+        } catch (e: Exception) {
+            // 예외 처리 - 역직렬화 실패 시 빈 리스트 반환
+            e.printStackTrace()
+            emptyList()
+        }
     }
 }
