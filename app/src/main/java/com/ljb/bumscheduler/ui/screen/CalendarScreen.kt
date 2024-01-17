@@ -39,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,7 +92,6 @@ fun CalendarScreen(
                 },
                 searchClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Search Clicked")
-                    viewModel.getHoliday(currentDate.year.toString())
                 },
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")
@@ -278,7 +278,7 @@ fun HorizontalCalendar(
     pagerState: PagerState,
     viewModel: CalendarViewModel
 ) {
-    LaunchedEffect(viewModel.displayMonth){
+    LaunchedEffect(pagerState){
         snapshotFlow { pagerState.currentPage }.collect {
             val pagedMonth = LocalDate.of(
                 yearRange.first + it / 12,
@@ -353,6 +353,8 @@ fun CalendarGrid(
     calendarDate: LocalDate,
 ) {
     val selectedDate by viewModel.selectDate.collectAsState()
+
+    val holidayList = rememberUpdatedState(newValue = viewModel.holidayList)
 
     val lastDay = calendarDate.lengthOfMonth()
 
@@ -470,7 +472,7 @@ fun CalendarDay(
         modifier = Modifier
             .height(height)
             .clip(shape = RoundedCornerShape(10.dp))
-            .calendarBorder(isSelected)                    // 선택 Day Gray Border
+            .daySelectedBorder(isSelected)                    // 선택 Day Gray Border
             .noRippleClickable { onSelectDate(displayDate) },
         contentAlignment = Alignment.TopCenter
     ) {
@@ -481,7 +483,7 @@ fun CalendarDay(
                 .wrapContentHeight()
                 .padding(top = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .calendarBackground(isToday, todayBgColor),
+                .dayDateBorder(isToday, todayBgColor),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -541,7 +543,7 @@ fun PrevNextDay(
     Box(modifier = Modifier.height(height))
 }
 
-fun Modifier.calendarBorder(boolean: Boolean) = composed {
+fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
     this.then(
         if (boolean) {
             border(
@@ -555,7 +557,7 @@ fun Modifier.calendarBorder(boolean: Boolean) = composed {
     )
 }
 
-fun Modifier.calendarBackground(boolean: Boolean, color: Color) = this.then(
+fun Modifier.dayDateBorder(boolean: Boolean, color: Color) = this.then(
     if (boolean) {
         background(color)
     } else {

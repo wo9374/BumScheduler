@@ -8,14 +8,14 @@ import javax.inject.Singleton
 
 @Singleton
 class GetLocalHolidayUseCase @Inject constructor(private val repository: LocalHolidayRepository) {
-    operator fun invoke(year: String): Flow<List<Holiday>> {
-        return repository.getHolidays(year)
+    operator fun invoke(): Flow<List<Holiday>> {
+        return repository.getAllHolidays()
     }
 }
 
 @Singleton
 class InsertHolidayUseCase @Inject constructor(private val repository: LocalHolidayRepository) {
-    suspend operator fun invoke(holiday: Holiday) {
-        repository.insertHoliday(holiday)
+    suspend operator fun invoke(year: String, holiday: Holiday) {
+        repository.insertHoliday(year, holiday)
     }
 }

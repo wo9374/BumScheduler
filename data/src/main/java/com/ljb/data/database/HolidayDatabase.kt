@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.ljb.data.model.HolidayResponse
 import com.ljb.data.model.HolidayRoomEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -18,8 +17,8 @@ abstract class HolidayDatabase : RoomDatabase() {
 
 @Dao
 interface HolidayDao {
-    @Query("SELECT * FROM holidays WHERE year = :year")
-    fun getHolidays(year: String): Flow<List<HolidayRoomEntity>>
+    @Query("SELECT * FROM holidays")
+    fun getAllHolidays(): Flow<List<HolidayRoomEntity>>
 
     @Insert
     suspend fun insertHoliday(holidayRoomEntity: HolidayRoomEntity)

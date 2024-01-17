@@ -2,17 +2,15 @@ package com.ljb.bumscheduler.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ljb.data.DlogUtil
-import com.ljb.data.MyTag
-import com.ljb.domain.model.Holiday
 import com.ljb.domain.model.status.ApiResult
 import com.ljb.domain.usecase.GetLocalHolidayUseCase
 import com.ljb.domain.usecase.GetRemoteHolidayUseCase
 import com.ljb.domain.usecase.InsertHolidayUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -38,37 +36,25 @@ class CalendarViewModel @Inject constructor(
         _selectDate.update { selectDate }
     }
 
+    val holidayList = getLocalHolidayUseCase().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
-    private var _holiday = MutableStateFlow<List<Holiday>>(emptyList())
-    val holiday get() = _holiday
-
-
-    fun getHoliday(solYear: String) {
+    fun getRemoteHoliday(solYear: String) {
         viewModelScope.launch {
-            getLocalHolidayUseCase(solYear).distinctUntilChanged().collect { localList ->
-                DlogUtil.d(MyTag, "localList : $localList")
-                if (localList.isEmpty()){
-                    getRemoteHolidayUseCase(solYear).distinctUntilChanged().collect { result ->
-                        when(result){
-                            is ApiResult.Loading -> {}
-                            is ApiResult.Success -> {
-                                _holiday.update {
-                                    DlogUtil.d(MyTag, "remoteHolidayList : ${result.data}")
-                                    result.data
-                                }
-
-                                result.data.forEach {
-                                    insertHolidayUseCase(it)
-                                }
-                            }
-                            is ApiResult.ApiError -> {}
-                            is ApiResult.NetworkError -> {}
+            getRemoteHolidayUseCase(solYear).distinctUntilChanged().collect { result ->
+                when (result) {
+                    is ApiResult.Loading -> {}
+                    is ApiResult.Success -> {
+                        result.data.forEach {
+                            insertHolidayUseCase(solYear, it)
                         }
                     }
-                } else {
-                    _holiday.update {
-                        localList
-                    }
+
+                    is ApiResult.ApiError -> {}
+                    is ApiResult.NetworkError -> {}
                 }
             }
         }

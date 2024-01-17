@@ -21,11 +21,11 @@ fun HolidayRoomEntity.mapperToHoliday(): Holiday {
     )
 }
 
-fun Holiday.mapperToHolidayResponse(): HolidayRoomEntity {
+fun Holiday.mapperToHolidayResponse(year: String): HolidayRoomEntity {
     return HolidayRoomEntity(
         localDate = localDate,
         isHoliday = isHoliday,
         dateName = dateName,
-        year = ""
+        year = year
     )
 }

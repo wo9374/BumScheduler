@@ -11,13 +11,13 @@ import javax.inject.Inject
 
 class LocalHolidayRepositoryImpl @Inject constructor(private val dataSource: LocalHolidaySource) :
     LocalHolidayRepository {
-    override fun getHolidays(year: String): Flow<List<Holiday>> {
-        return dataSource.getHolidays(year).map { roomHolidayList ->
+    override fun getAllHolidays(): Flow<List<Holiday>> {
+        return dataSource.getAllHolidays().map { roomHolidayList ->
             roomHolidayList.map { it.mapperToHoliday() }
         }
     }
 
-    override suspend fun insertHoliday(holiday: Holiday) {
-        dataSource.insertHoliday(holiday.mapperToHolidayResponse())
+    override suspend fun insertHoliday(year: String, holiday: Holiday) {
+        dataSource.insertHoliday(holiday.mapperToHolidayResponse(year))
     }
 }

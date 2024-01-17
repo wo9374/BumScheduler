@@ -4,6 +4,6 @@ import com.ljb.domain.model.Holiday
 import kotlinx.coroutines.flow.Flow
 
 interface LocalHolidayRepository {
-    fun getHolidays(year: String): Flow<List<Holiday>>
-    suspend fun insertHoliday(holiday: Holiday)
+    fun getAllHolidays(): Flow<List<Holiday>>
+    suspend fun insertHoliday(year: String, holiday: Holiday)
 }
