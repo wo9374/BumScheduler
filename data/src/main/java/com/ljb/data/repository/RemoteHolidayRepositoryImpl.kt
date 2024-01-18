@@ -1,7 +1,7 @@
 package com.ljb.data.repository
 
 import com.ljb.data.datasource.RemoteHolidaySource
-import com.ljb.data.mapper.mapperToHoliday
+import com.ljb.data.mapper.mapperResponseToHoliday
 import com.ljb.domain.model.Holiday
 import com.ljb.domain.model.status.ApiResult
 import com.ljb.domain.repository.RemoteHolidayRepository
@@ -20,7 +20,7 @@ class RemoteHolidayRepositoryImpl @Inject constructor(
                 val resultData = when (this) {
                     is ApiResult.Loading -> ApiResult.Loading
                     is ApiResult.Success -> ApiResult.Success(
-                        data.map { it.mapperToHoliday() }
+                        data.map { it.mapperResponseToHoliday() }
                     )
 
                     is ApiResult.ApiError -> ApiResult.ApiError(message, code)

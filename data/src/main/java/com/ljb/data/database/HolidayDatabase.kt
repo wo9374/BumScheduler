@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.ljb.data.model.HolidayResponse
 import com.ljb.data.model.HolidayRoomEntity
 import kotlinx.coroutines.flow.Flow
 

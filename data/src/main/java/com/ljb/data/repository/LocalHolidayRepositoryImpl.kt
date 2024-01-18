@@ -1,7 +1,7 @@
 package com.ljb.data.repository
 
 import com.ljb.data.datasource.LocalHolidaySource
-import com.ljb.data.mapper.mapperToHoliday
+import com.ljb.data.mapper.mapperRoomEntityToHoliday
 import com.ljb.data.mapper.mapperToHolidayResponse
 import com.ljb.domain.model.Holiday
 import com.ljb.domain.repository.LocalHolidayRepository
@@ -13,11 +13,11 @@ class LocalHolidayRepositoryImpl @Inject constructor(private val dataSource: Loc
     LocalHolidayRepository {
     override fun getAllHolidays(): Flow<List<Holiday>> {
         return dataSource.getAllHolidays().map { roomHolidayList ->
-            roomHolidayList.map { it.mapperToHoliday() }
+            roomHolidayList.map { it.mapperRoomEntityToHoliday() }
         }
     }
 
-    override suspend fun insertHoliday(year: String, holiday: Holiday) {
-        dataSource.insertHoliday(holiday.mapperToHolidayResponse(year))
+    override suspend fun insertHoliday(holiday: Holiday) {
+        dataSource.insertHoliday(holiday.mapperToHolidayResponse())
     }
 }

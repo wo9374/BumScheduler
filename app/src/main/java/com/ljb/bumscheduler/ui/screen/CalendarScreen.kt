@@ -37,9 +37,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +60,7 @@ import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
 import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
+import com.ljb.bumscheduler.viewmodel.CalendarEvent
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
 import com.ljb.data.mapper.allMonth
 import com.ljb.data.mapper.currentDate
@@ -67,6 +68,9 @@ import com.ljb.data.mapper.formatMonth
 import com.ljb.data.mapper.formatYearMonth
 import com.ljb.data.mapper.initialPage
 import com.ljb.data.mapper.yearRange
+import com.ljb.domain.model.Holiday
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -96,7 +100,7 @@ fun CalendarScreen(
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")
                     scope.launch {
-                        viewModel.select(currentDate)
+                        viewModel.processEvent(CalendarEvent.SelectDate(currentDate))
                         pagerState.animateScrollToPage(initialPage)
                     }
                 }
@@ -219,7 +223,7 @@ fun CalendarHeader(
             .padding(bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val monthDate by viewModel.displayMonth.collectAsState()
+        val monthDate by viewModel.calendarMonth.collectAsState()
 
         // 현재 년도면 월만 표시
         val displayMonth = if (monthDate.year == currentDate.year) {
@@ -285,7 +289,7 @@ fun HorizontalCalendar(
                 it % 12 + 1,
                 1
             )
-            viewModel.change(pagedMonth)
+            viewModel.processEvent(CalendarEvent.SwipeMonth(pagedMonth))
         }
     }
 
@@ -312,8 +316,8 @@ fun HorizontalCalendar(
 fun HorizontalScheduler(
     viewModel: CalendarViewModel
 ){
-    val monthDate = viewModel.displayMonth.collectAsState().value
-    val selectedDate = viewModel.selectDate.collectAsState().value
+    val monthDate by viewModel.calendarMonth.collectAsState()
+    val selectedDate by viewModel.selectDate.collectAsState()
 
     val days = (1..monthDate.lengthOfMonth()).toList().map{
         monthDate.withDayOfMonth(it)
@@ -333,15 +337,16 @@ fun HorizontalScheduler(
         }
     }
 
-    LaunchedEffect(selectedDate){
-        schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
-    }
-
     LaunchedEffect(monthDate) {
         snapshotFlow { schedulerState.currentPage }.collect { currentPage ->
             val date = days[currentPage]
-            viewModel.select(date)
-            DlogUtil.d(MyTag, "date : $date")
+            viewModel.processEvent(CalendarEvent.SelectDate(date))
+        }
+    }
+
+    LaunchedEffect(monthDate){
+        snapshotFlow { selectedDate }.collectLatest {
+            schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
         }
     }
 }
@@ -352,16 +357,16 @@ fun CalendarGrid(
     viewModel: CalendarViewModel,
     calendarDate: LocalDate,
 ) {
-    val selectedDate by viewModel.selectDate.collectAsState()
+    val holidayList by viewModel.holidayList.collectAsState()
 
-    val holidayList = rememberUpdatedState(newValue = viewModel.holidayList)
+    if (holidayList.isNotEmpty()){
+        // 공휴일 리스트의 모든 요소가 특정 조건을 만족하는지
+        val matchYear = holidayList.none { it.localDate.year != calendarDate.year }
+        if (!matchYear) //일치하지 않으면 해당년도 공휴일 네트워크 요청
+            viewModel.getRemoteHoliday(calendarDate.year.toString())
+    }
 
     val lastDay = calendarDate.lengthOfMonth()
-
-    // 현재 Month 의 Day LocalDate
-    val days = IntRange(1, lastDay).toList().map { day ->
-        calendarDate.withDayOfMonth(day)
-    }
 
     // 첫번째 날의 컬럼 위치 ( 1: 월요일 ~ 7: 일요일)
     val firstDayColumn = calendarDate.dayOfWeek.value
@@ -371,9 +376,10 @@ fun CalendarGrid(
     val afterBoxCount = 7 - lastDayColumn - 1
 
     // 총 달력의 Count
-    var totalGridCount = days.size
+    var totalGridCount = lastDay
     if (firstDayColumn != 7) totalGridCount += firstDayColumn
     if (afterBoxCount != 7) totalGridCount += afterBoxCount
+
 
     // 표시 Week 크기를 같게 위해 박스 크기 조절 (270)
     val boxHeight = if (totalGridCount <= 35){
@@ -382,61 +388,68 @@ fun CalendarGrid(
         45.dp
     }
 
-    // 이전 달 Day
-    val prevMonthDay = if (firstDayColumn < 7){
+    // 모든 날짜 리스트
+    val displayDateList = mutableListOf<LocalDate>()
+
+    // 이전 달의 일부 LocalDate 추가 부분
+    if (firstDayColumn < 7){
         val prevMonth = calendarDate.minusMonths(1)
         val prevLastDay = prevMonth.lengthOfMonth()
-        (prevLastDay - firstDayColumn + 1 .. prevLastDay).toList().map {
-            prevMonth.withDayOfMonth(it)
+
+        (prevLastDay - firstDayColumn + 1 .. prevLastDay).forEach {
+            displayDateList.add(
+                prevMonth.withDayOfMonth(it)
+            )
         }
-    } else
-        emptyList()
+    }
 
+    // 현재 달의 LocalDate 추가 부분
+    IntRange(1, lastDay).forEach {
+        displayDateList.add(
+            calendarDate.withDayOfMonth(it)
+        )
+    }
 
+    // 다음 달의 LocalDate 추가 부분
     val nextMonth = calendarDate.plusMonths(1)
-    val nextMonthDay = if (afterBoxCount != 0){
-        (1 .. afterBoxCount).toList().map {
-            nextMonth.withDayOfMonth(it)
+    if (afterBoxCount != 0){            // 다음 달의 일부 LocalDate 존재할 때 추가
+        (1 .. afterBoxCount).forEach {
+            displayDateList.add(
+                nextMonth.withDayOfMonth(it)
+            )
         }
-    } else if (totalGridCount <= 28) {      // 현재 달이 4주 일때는 다음 달 날짜를 7개 더 추가
-        (1 .. 7).toList().map {
-            nextMonth.withDayOfMonth(it)
+    } else if (totalGridCount <= 28) {  // 현재 달이 4주 일때는 다음 달 날짜를 7개 더 추가
+        (1 .. 7).toList().forEach {
+            displayDateList.add(
+                nextMonth.withDayOfMonth(it)
+            )
         }
-    } else
-        emptyList()
+    }
+
+    val selectedDate by viewModel.selectDate.collectAsState()
 
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Fixed(7)
     ) {
 
-        items(prevMonthDay) { day ->
-            PrevNextDay(
-                height = boxHeight,
-                displayDate = day,
-                isToday = false,
-                onSelectDate = {}
-            )
-        }
+        items(displayDateList) {  day ->
 
-        items(days) { day ->
+            val isSelected = if(day.monthValue == calendarDate.monthValue) {
+                selectedDate.compareTo(day) == 0
+            } else {
+                false
+            }
+
             CalendarDay(
                 height = boxHeight,
                 displayDate = day,
                 isToday = day == currentDate,
-                isSelected = selectedDate.compareTo(day) == 0,
+                isSelected = isSelected,
+                dayInDisplayMonth = day.monthValue == calendarDate.monthValue,
                 onSelectDate = {
-                    viewModel.select(it)
+                    viewModel.processEvent(CalendarEvent.SelectDate(it))
                 }
-            )
-        }
-
-        items(nextMonthDay){ day ->
-            PrevNextDay(
-                height = boxHeight,
-                displayDate = day,
-                isToday = false,
-                onSelectDate = {}
             )
         }
     }
@@ -448,6 +461,7 @@ fun CalendarDay(
     displayDate: LocalDate,
     isToday: Boolean,
     isSelected: Boolean,
+    dayInDisplayMonth: Boolean,
     onSelectDate: (LocalDate) -> Unit
 ) {
     val dayOfWeek = displayDate.dayOfWeek
@@ -473,7 +487,7 @@ fun CalendarDay(
             .height(height)
             .clip(shape = RoundedCornerShape(10.dp))
             .daySelectedBorder(isSelected)                    // 선택 Day Gray Border
-            .noRippleClickable { onSelectDate(displayDate) },
+            .noRippleClickable(dayInDisplayMonth) { onSelectDate(displayDate) },
         contentAlignment = Alignment.TopCenter
     ) {
 
@@ -488,59 +502,18 @@ fun CalendarDay(
         ) {
             Text(
                 text = displayDate.dayOfMonth.toString(),
-                color = textColor,
+                color = if (dayInDisplayMonth)
+                    textColor
+                else
+                    textColor.copy(alpha = 0.3f),
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = if (dayInDisplayMonth)
+                    FontWeight.Bold
+                else
+                    FontWeight.Normal
             )
         }
     }
-}
-
-@Composable
-fun PrevNextDay(
-    height: Dp,
-    displayDate: LocalDate,
-    isToday: Boolean,
-    onSelectDate: (LocalDate) -> Unit,
-) {
-    val dayOfWeek = displayDate.dayOfWeek
-
-    val textColor = if(isToday){
-        reverseTxtColor(isSystemInDarkTheme())
-    } else {
-        when (dayOfWeek) {
-            DayOfWeek.SUNDAY -> DefaultRed
-            DayOfWeek.SATURDAY -> DefaultBlue
-            else -> defaultTxtColor(isSystemInDarkTheme())
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .height(height)
-            .clip(shape = RoundedCornerShape(10.dp))
-            .noRippleClickable { onSelectDate(displayDate) },
-        contentAlignment = Alignment.TopCenter
-    ) {
-
-        Box(
-            modifier = Modifier
-                .width(18.dp)
-                .wrapContentHeight()
-                .padding(top = 2.dp)
-                .clip(shape = RoundedCornerShape(4.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = displayDate.dayOfMonth.toString(),
-                color = textColor.copy(alpha = 0.3f),
-                fontSize = 12.sp,
-                //fontWeight = FontWeight.Bold
-            )
-        }
-    }
-
-    Box(modifier = Modifier.height(height))
 }
 
 fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
@@ -566,7 +539,7 @@ fun Modifier.dayDateBorder(boolean: Boolean, color: Color) = this.then(
 )
 
 //Modifier onClick 클릭 효과 제거
-fun Modifier.noRippleClickable(enabled: Boolean = true, onClick: () -> Unit): Modifier = composed {
+fun Modifier.noRippleClickable(enabled: Boolean, onClick: () -> Unit): Modifier = composed {
     clickable(
         indication = null,
         enabled = enabled,
@@ -637,26 +610,7 @@ fun CalendarDayPreview() {
         displayDate = currentDate,
         isToday = true,
         isSelected = true,
-        onSelectDate = {}
-    )
-}
-
-@Preview( showBackground = true)
-@Composable
-fun PrevNextDayPreview(){
-    val totalGridCount = 35
-    val boxHeight = if (totalGridCount <= 28) {
-        67.5.dp
-    } else if (totalGridCount <= 35){
-        54.dp
-    } else {
-        45.dp
-    }
-
-    PrevNextDay(
-        height = boxHeight,
-        displayDate = currentDate,
-        isToday = true,
+        dayInDisplayMonth = true,
         onSelectDate = {}
     )
 }

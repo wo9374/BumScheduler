@@ -13,12 +13,14 @@ data class HolidayResponse(
     @SerialName("dateName") val dateName: String,
     @SerialName("isHoliday") val isHoliday: String,
     @SerialName("locdate") val locdate: Int,
-    @SerialName("seq") val seq: Int
-)
+    @SerialName("seq") val seq: Int,
+){
+    @kotlinx.serialization.Transient
+    @SerialName("remarks") val remarks: String = ""
+}
 
 @Entity(tableName = "holidays")
 data class HolidayRoomEntity(
-    val year: String,
     @PrimaryKey val localDate: LocalDate,
     val dateName: String,
     val isHoliday: Boolean,

@@ -5,7 +5,7 @@ import com.ljb.data.model.HolidayRoomEntity
 import com.ljb.domain.model.Holiday
 import java.time.LocalDate
 
-fun HolidayResponse.mapperToHoliday(): Holiday {
+fun HolidayResponse.mapperResponseToHoliday(): Holiday {
     return Holiday(
         localDate = LocalDate.parse(locdate.toString(), formatString),
         dateName = dateName,
@@ -13,7 +13,7 @@ fun HolidayResponse.mapperToHoliday(): Holiday {
     )
 }
 
-fun HolidayRoomEntity.mapperToHoliday(): Holiday {
+fun HolidayRoomEntity.mapperRoomEntityToHoliday(): Holiday {
     return Holiday(
         localDate = localDate,
         dateName = dateName,
@@ -21,11 +21,10 @@ fun HolidayRoomEntity.mapperToHoliday(): Holiday {
     )
 }
 
-fun Holiday.mapperToHolidayResponse(year: String): HolidayRoomEntity {
+fun Holiday.mapperToHolidayResponse(): HolidayRoomEntity {
     return HolidayRoomEntity(
         localDate = localDate,
         isHoliday = isHoliday,
         dateName = dateName,
-        year = year
     )
 }

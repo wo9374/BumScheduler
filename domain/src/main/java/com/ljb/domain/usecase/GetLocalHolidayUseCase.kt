@@ -15,7 +15,7 @@ class GetLocalHolidayUseCase @Inject constructor(private val repository: LocalHo
 
 @Singleton
 class InsertHolidayUseCase @Inject constructor(private val repository: LocalHolidayRepository) {
-    suspend operator fun invoke(year: String, holiday: Holiday) {
-        repository.insertHoliday(year, holiday)
+    suspend operator fun invoke(holiday: Holiday) {
+        repository.insertHoliday(holiday)
     }
 }

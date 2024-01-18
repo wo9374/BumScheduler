@@ -40,7 +40,6 @@ class RemoteHolidaySourceImpl @Inject constructor(
                 //parameter("solMonth", solMonth)
             }.run {
                 if (status.isSuccess()) {
-                    DlogUtil.d(MyTag, "bodyAsText : ${bodyAsText()}")
                     val holidayItem = deserializationJsonString(jsonString = bodyAsText())
                     ApiResult.Success(holidayItem)
                 } else {

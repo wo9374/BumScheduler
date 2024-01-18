@@ -59,20 +59,20 @@ object NetworkModule {
             install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
-                        Log.v("Ktor Logger", message)
+                        Log.v(MyTag, message)
                     }
                 }
                 level = LogLevel.ALL
             }
 
-            install(ResponseObserver) {
+            /*install(ResponseObserver) {
                 onResponse { response ->
                     DlogUtil.d(
                         MyTag,
                         "HTTP status: ${response.status.value} ${response.bodyAsText()}"
                     )
                 }
-            }
+            }*/
         }
     }
 
