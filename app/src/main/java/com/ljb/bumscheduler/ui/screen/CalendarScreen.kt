@@ -37,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
@@ -68,8 +67,6 @@ import com.ljb.data.mapper.formatMonth
 import com.ljb.data.mapper.formatYearMonth
 import com.ljb.data.mapper.initialPage
 import com.ljb.data.mapper.yearRange
-import com.ljb.domain.model.Holiday
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -93,6 +90,7 @@ fun CalendarScreen(
                 modifier = Modifier.height(52.dp),
                 menuClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Menu Clicked")
+                    viewModel.getData(2024)
                 },
                 searchClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Search Clicked")
@@ -358,13 +356,7 @@ fun CalendarGrid(
     calendarDate: LocalDate,
 ) {
     val holidayList by viewModel.holidayList.collectAsState()
-
-    if (holidayList.isNotEmpty()){
-        // 공휴일 리스트의 모든 요소가 특정 조건을 만족하는지
-        val matchYear = holidayList.none { it.localDate.year != calendarDate.year }
-        if (!matchYear) //일치하지 않으면 해당년도 공휴일 네트워크 요청
-            viewModel.getRemoteHoliday(calendarDate.year.toString())
-    }
+    DlogUtil.d(MyTag, "CalendarGrid holidayList: $holidayList")
 
     val lastDay = calendarDate.lengthOfMonth()
 

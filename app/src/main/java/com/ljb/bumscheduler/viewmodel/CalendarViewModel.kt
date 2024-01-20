@@ -3,16 +3,11 @@ package com.ljb.bumscheduler.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ljb.bumscheduler.base.UiEvent
-import com.ljb.data.DlogUtil
-import com.ljb.data.MyTag
 import com.ljb.data.mapper.currentDate
 import com.ljb.domain.model.Holiday
-import com.ljb.domain.model.status.ApiResult
-import com.ljb.domain.usecase.GetLocalHolidayUseCase
-import com.ljb.domain.usecase.GetRemoteHolidayUseCase
-import com.ljb.domain.usecase.InsertHolidayUseCase
+import com.ljb.domain.usecase.GetHolidayUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -23,43 +18,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val getRemoteHolidayUseCase: GetRemoteHolidayUseCase,
-    private val getLocalHolidayUseCase: GetLocalHolidayUseCase,
-    private val insertHolidayUseCase: InsertHolidayUseCase,
+    private val getHolidayUseCase: GetHolidayUseCase
 ) : ViewModel() {
 
-    val holidayList = MutableStateFlow<List<Holiday>>(emptyList())
-
-    init {
-        viewModelScope.launch {
-            getLocalHolidayUseCase().distinctUntilChanged().collectLatest {
-                if (it.isEmpty()){
-                    getRemoteHoliday(currentDate.year.toString())
-                } else {
-                    holidayList.emit(it)
-                }
-            }
-        }
-    }
-
-    fun getRemoteHoliday(solYear: String) {
-        viewModelScope.launch {
-            getRemoteHolidayUseCase(solYear).distinctUntilChanged().collect { result ->
-                when (result) {
-                    is ApiResult.Loading -> {}
-                    is ApiResult.Success -> {
-                        DlogUtil.d(MyTag, "ApiResult.Success : ${result.data}")
-                        result.data.forEach {
-                            insertHolidayUseCase(it)
-                        }
-                    }
-
-                    is ApiResult.ApiError -> {}
-                    is ApiResult.NetworkError -> {}
-                }
-            }
-        }
-    }
+    private val _holidayList = MutableStateFlow<List<Holiday>>(emptyList())
+    val holidayList get() = _holidayList
 
     private val _calendarMonth = MutableStateFlow(currentDate)
     val calendarMonth get() = _calendarMonth
@@ -94,6 +57,17 @@ class CalendarViewModel @Inject constructor(
             }
         }
     }
+
+    fun getData(reqYear: Int){
+        viewModelScope.launch(Dispatchers.IO) {
+            getHolidayUseCase(reqYear).distinctUntilChanged().collectLatest { holidays ->
+                _holidayList.update {
+                    holidays
+                }
+            }
+        }
+    }
+
 }
 
 sealed class CalendarEvent : UiEvent {

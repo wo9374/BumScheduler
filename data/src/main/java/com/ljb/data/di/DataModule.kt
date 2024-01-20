@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.ljb.data.database.HolidayDao
 import com.ljb.data.database.HolidayDatabase
+import com.ljb.data.datasource.LocalHolidaySource
+import com.ljb.data.datasource.LocalHolidaySourceImpl
 import com.ljb.data.datasource.RemoteHolidaySource
 import com.ljb.data.datasource.RemoteHolidaySourceImpl
 import dagger.Module
@@ -20,12 +22,16 @@ class DataSourceModule {
 
     @Provides
     @Singleton
+    fun provideLocalHolidaySource(dao: HolidayDao): LocalHolidaySource = LocalHolidaySourceImpl(dao)
+
+    @Provides
+    @Singleton
     fun provideHolidayDataSource(httpClient: HttpClient): RemoteHolidaySource = RemoteHolidaySourceImpl(httpClient)
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
-class DatabaseModule {
+object DatabaseModule {
     @Provides
     @Singleton
     fun provideHolidayDatabase(@ApplicationContext appContext: Context): HolidayDatabase =

@@ -6,13 +6,18 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 interface LocalHolidaySource {
-    fun getAllHolidays(): Flow<List<HolidayRoomEntity>>
+    fun checkLocalHolidays(reqYear: Int): List<HolidayRoomEntity>
+    fun getLocalHolidays(reqYear: Int): Flow<List<HolidayRoomEntity>>
     suspend fun insertHoliday(holidayRoomEntity: HolidayRoomEntity)
 }
 
 class LocalHolidaySourceImpl @Inject constructor(private val dao: HolidayDao) : LocalHolidaySource {
-    override fun getAllHolidays(): Flow<List<HolidayRoomEntity>> {
-        return dao.getAllHolidays()
+    override fun checkLocalHolidays(reqYear: Int): List<HolidayRoomEntity> {
+        return dao.checkLocalHolidays(reqYear)
+    }
+
+    override fun getLocalHolidays(reqYear: Int): Flow<List<HolidayRoomEntity>> {
+        return dao.getLocalHolidays(reqYear)
     }
 
     override suspend fun insertHoliday(holidayRoomEntity: HolidayRoomEntity) {

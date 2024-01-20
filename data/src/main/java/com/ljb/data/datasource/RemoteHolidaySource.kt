@@ -18,7 +18,7 @@ import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 
 interface RemoteHolidaySource {
-    suspend fun getHoliday(solYear: String): ApiResult<List<HolidayResponse>>
+    suspend fun getHoliday(solYear: Int): ApiResult<List<HolidayResponse>>
 }
 
 
@@ -30,13 +30,13 @@ class RemoteHolidaySourceImpl @Inject constructor(
     private val httpClient: HttpClient
 ) : RemoteHolidaySource {
 
-    override suspend fun getHoliday(solYear: String): ApiResult<List<HolidayResponse>> {
+    override suspend fun getHoliday(solYear: Int): ApiResult<List<HolidayResponse>> {
         return try {
             httpClient.get("SpcdeInfoService/getHoliDeInfo") {
                 parameter("ServiceKey", BuildConfig.DATA_API_KEY_DECODE)
                 parameter("_type", "json")
                 parameter("numOfRows", "100")
-                parameter("solYear", solYear)
+                parameter("solYear", solYear.toString())
                 //parameter("solMonth", solMonth)
             }.run {
                 if (status.isSuccess()) {

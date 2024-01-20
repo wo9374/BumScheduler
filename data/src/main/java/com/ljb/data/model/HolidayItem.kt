@@ -14,18 +14,21 @@ data class HolidayResponse(
     @SerialName("isHoliday") val isHoliday: String,
     @SerialName("locdate") val locdate: Int,
     @SerialName("seq") val seq: Int,
-){
-    @kotlinx.serialization.Transient
+
+    @Transient
     @SerialName("remarks") val remarks: String = ""
-}
+)
 
 @Entity(tableName = "holidays")
 data class HolidayRoomEntity(
-    @PrimaryKey val localDate: LocalDate,
+    @PrimaryKey val localDate: Int,
+    val year: Int,
+    val month: Int,
+    val day: Int,
     val dateName: String,
     val isHoliday: Boolean,
-){
-    class LocalDateConverters {
+) {
+    /*class LocalDateConverters {
         @TypeConverter
         fun fromLocalDate(localDate: LocalDate?): Long? {
             return localDate?.toEpochDay()
@@ -35,5 +38,5 @@ data class HolidayRoomEntity(
         fun toLocalDate(epochDay: Long?): LocalDate? {
             return epochDay?.let { LocalDate.ofEpochDay(it) }
         }
-    }
+    }*/
 }
