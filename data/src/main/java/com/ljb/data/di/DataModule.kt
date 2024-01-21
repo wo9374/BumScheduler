@@ -8,25 +8,26 @@ import com.ljb.data.datasource.LocalHolidaySource
 import com.ljb.data.datasource.LocalHolidaySourceImpl
 import com.ljb.data.datasource.RemoteHolidaySource
 import com.ljb.data.datasource.RemoteHolidaySourceImpl
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import io.ktor.client.HttpClient
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-class DataSourceModule {
+abstract class DataSourceModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideLocalHolidaySource(dao: HolidayDao): LocalHolidaySource = LocalHolidaySourceImpl(dao)
+    abstract fun bindLocalHolidaySource(impl: LocalHolidaySourceImpl): LocalHolidaySource
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideHolidayDataSource(httpClient: HttpClient): RemoteHolidaySource = RemoteHolidaySourceImpl(httpClient)
+    abstract fun bindRemoteHolidaySource(impl: RemoteHolidaySourceImpl): RemoteHolidaySource
+
 }
 
 @Module
