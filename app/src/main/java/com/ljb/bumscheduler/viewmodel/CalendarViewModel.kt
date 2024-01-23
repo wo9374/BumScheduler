@@ -6,11 +6,12 @@ import com.ljb.bumscheduler.base.UiEvent
 import com.ljb.data.mapper.currentDate
 import com.ljb.domain.model.Holiday
 import com.ljb.domain.usecase.GetHolidayUseCase
+import com.ljb.domain.usecase.RequestHolidayUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -18,11 +19,21 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val getHolidayUseCase: GetHolidayUseCase
+    private val requestHolidayUseCase: RequestHolidayUseCase,
+    private val getHolidayUseCase: GetHolidayUseCase,
 ) : ViewModel() {
 
-    private val _holidayList = MutableStateFlow<List<Holiday>>(emptyList())
-    val holidayList get() = _holidayList
+    val holidayList = getHolidayUseCase().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    fun getData(){
+        viewModelScope.launch(Dispatchers.IO) {
+            requestHolidayUseCase(currentDate.year)
+        }
+    }
 
     private val _calendarMonth = MutableStateFlow(currentDate)
     val calendarMonth get() = _calendarMonth
@@ -57,17 +68,6 @@ class CalendarViewModel @Inject constructor(
             }
         }
     }
-
-    fun getData(reqYear: Int){
-        viewModelScope.launch(Dispatchers.IO) {
-            getHolidayUseCase(reqYear).distinctUntilChanged().collectLatest { holidays ->
-                _holidayList.update {
-                    holidays
-                }
-            }
-        }
-    }
-
 }
 
 sealed class CalendarEvent : UiEvent {

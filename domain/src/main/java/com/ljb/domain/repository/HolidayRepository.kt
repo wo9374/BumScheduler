@@ -4,5 +4,6 @@ import com.ljb.domain.model.Holiday
 import kotlinx.coroutines.flow.Flow
 
 interface HolidayRepository {
-    suspend fun getAllHolidays(reqYear: Int): Flow<List<Holiday>>
+    fun getAllHolidays(): Flow<List<Holiday>>
+    suspend fun requestHolidays(reqYear: Int)
 }

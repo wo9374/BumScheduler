@@ -1,7 +1,6 @@
 package com.ljb.data.di
 
 import android.content.Context
-import androidx.room.Room
 import com.ljb.data.database.HolidayDao
 import com.ljb.data.database.HolidayDatabase
 import com.ljb.data.datasource.LocalHolidaySource
@@ -21,11 +20,9 @@ import javax.inject.Singleton
 abstract class DataSourceModule {
 
     @Binds
-    @Singleton
     abstract fun bindLocalHolidaySource(impl: LocalHolidaySourceImpl): LocalHolidaySource
 
     @Binds
-    @Singleton
     abstract fun bindRemoteHolidaySource(impl: RemoteHolidaySourceImpl): RemoteHolidaySource
 
 }
@@ -33,12 +30,12 @@ abstract class DataSourceModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    @Provides
     @Singleton
-    fun provideHolidayDatabase(@ApplicationContext appContext: Context): HolidayDatabase =
-        Room.databaseBuilder(appContext, HolidayDatabase::class.java, "holiday_db").build()
+    @Provides
+    fun provideHolidayDatabase(@ApplicationContext appContext: Context) =
+        HolidayDatabase.getInstance(appContext)
 
-    @Provides
     @Singleton
+    @Provides
     fun provideHolidayDao(database: HolidayDatabase): HolidayDao = database.dao()
 }

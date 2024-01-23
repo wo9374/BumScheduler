@@ -7,8 +7,8 @@ import javax.inject.Inject
 
 interface LocalHolidaySource {
     fun checkLocalHolidays(reqYear: Int): List<HolidayRoomEntity>
-    fun getLocalHolidays(reqYear: Int): Flow<List<HolidayRoomEntity>>
-    suspend fun insertHoliday(holidayRoomEntity: HolidayRoomEntity)
+    fun getLocalHolidays(): Flow<List<HolidayRoomEntity>>
+    suspend fun insertHoliday(holidayRoomEntity: List<HolidayRoomEntity>)
 }
 
 class LocalHolidaySourceImpl @Inject constructor(private val dao: HolidayDao) : LocalHolidaySource {
@@ -16,11 +16,13 @@ class LocalHolidaySourceImpl @Inject constructor(private val dao: HolidayDao) : 
         return dao.checkLocalHolidays(reqYear)
     }
 
-    override fun getLocalHolidays(reqYear: Int): Flow<List<HolidayRoomEntity>> {
-        return dao.getLocalHolidays(reqYear)
+    override fun getLocalHolidays(): Flow<List<HolidayRoomEntity>> {
+        return dao.getLocalHolidays()
     }
 
-    override suspend fun insertHoliday(holidayRoomEntity: HolidayRoomEntity) {
-        dao.insertHoliday(holidayRoomEntity)
+    override suspend fun insertHoliday(holidayRoomEntity: List<HolidayRoomEntity>) {
+        dao.insertHoliday(
+            *holidayRoomEntity.toTypedArray()
+        )
     }
 }
