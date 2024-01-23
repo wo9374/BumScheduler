@@ -29,12 +29,6 @@ class CalendarViewModel @Inject constructor(
         initialValue = emptyList()
     )
 
-    fun getData(){
-        viewModelScope.launch(Dispatchers.IO) {
-            requestHolidayUseCase(currentDate.year)
-        }
-    }
-
     private val _calendarMonth = MutableStateFlow(currentDate)
     val calendarMonth get() = _calendarMonth
 
@@ -58,6 +52,11 @@ class CalendarViewModel @Inject constructor(
                     } else {
                         event.changeMonth.withDayOfMonth(selectDay)  // 이전 선택 Day 를 변경될 월의 Day 로 지정
                     }
+                }
+
+
+                viewModelScope.launch(Dispatchers.IO) {
+                    requestHolidayUseCase(event.changeMonth.year)
                 }
             }
 

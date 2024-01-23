@@ -90,7 +90,6 @@ fun CalendarScreen(
                 modifier = Modifier.height(52.dp),
                 menuClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Menu Clicked")
-                    viewModel.getData()
                 },
                 searchClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Search Clicked")
