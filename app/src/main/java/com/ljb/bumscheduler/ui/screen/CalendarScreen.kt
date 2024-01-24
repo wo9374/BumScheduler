@@ -55,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ljb.data.DlogUtil
 import com.ljb.data.MyTag
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
+import com.ljb.bumscheduler.ui.theme.DefaultGreen
 import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
 import com.ljb.bumscheduler.ui.theme.grayColor
@@ -67,6 +68,7 @@ import com.ljb.data.mapper.formatMonth
 import com.ljb.data.mapper.formatYearMonth
 import com.ljb.data.mapper.initialPage
 import com.ljb.data.mapper.yearRange
+import com.ljb.domain.model.Holiday
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -354,8 +356,6 @@ fun CalendarGrid(
     viewModel: CalendarViewModel,
     calendarDate: LocalDate,
 ) {
-    val holidayList by viewModel.holidayList.collectAsState()
-    DlogUtil.d(MyTag, "CalendarGrid holidayList: $holidayList")
 
     val lastDay = calendarDate.lengthOfMonth()
 
@@ -419,6 +419,8 @@ fun CalendarGrid(
 
     val selectedDate by viewModel.selectDate.collectAsState()
 
+    val holidayList  by viewModel.holidayList.collectAsState()
+
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Fixed(7)
@@ -426,17 +428,13 @@ fun CalendarGrid(
 
         items(displayDateList) {  day ->
 
-            val isSelected = if(day.monthValue == calendarDate.monthValue) {
-                selectedDate.compareTo(day) == 0
-            } else {
-                false
-            }
+            val holidayItem = holidayList.find { it.localDate == day }
 
             CalendarDay(
                 height = boxHeight,
                 displayDate = day,
-                isToday = day == currentDate,
-                isSelected = isSelected,
+                holidayItem = holidayItem,
+                isSelected = selectedDate == day,
                 dayInDisplayMonth = day.monthValue == calendarDate.monthValue,
                 onSelectDate = {
                     viewModel.processEvent(CalendarEvent.SelectDate(it))
@@ -450,21 +448,32 @@ fun CalendarGrid(
 fun CalendarDay(
     height: Dp,
     displayDate: LocalDate,
-    isToday: Boolean,
+    holidayItem: Holiday?,
     isSelected: Boolean,
     dayInDisplayMonth: Boolean,
     onSelectDate: (LocalDate) -> Unit
 ) {
+
+    //TODO 현재달의 날짜가 아닐시 alpha 값 조정 필요
+    
+    val isToday = displayDate == currentDate    // 오늘 날짜 Boolean
+
     val dayOfWeek = displayDate.dayOfWeek
 
-    val todayBgColor = when (dayOfWeek) {
-        DayOfWeek.SUNDAY -> DefaultRed
-        DayOfWeek.SATURDAY -> DefaultBlue
-        else -> grayColor(isSystemInDarkTheme())
+    val todayBgColor = if (holidayItem?.isHoliday == true) {
+        DefaultRed
+    } else {
+        when(dayOfWeek){
+            DayOfWeek.SUNDAY -> DefaultRed
+            DayOfWeek.SATURDAY -> DefaultBlue
+            else -> grayColor(isSystemInDarkTheme())
+        }
     }
 
-    val textColor = if(isToday){
+    val textColor = if(displayDate == currentDate){
         reverseTxtColor(isSystemInDarkTheme())
+    } else if(holidayItem?.isHoliday == true) {
+        DefaultRed
     } else {
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
@@ -473,22 +482,22 @@ fun CalendarDay(
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .height(height)
             .clip(shape = RoundedCornerShape(10.dp))
             .daySelectedBorder(isSelected)                    // 선택 Day Gray Border
             .noRippleClickable(dayInDisplayMonth) { onSelectDate(displayDate) },
-        contentAlignment = Alignment.TopCenter
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Box(
             modifier = Modifier
                 .width(18.dp)
                 .wrapContentHeight()
-                .padding(top = 2.dp)
+                .padding(vertical = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .dayDateBorder(isToday, todayBgColor),
+                .todayBackground(isToday, todayBgColor),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -504,6 +513,17 @@ fun CalendarDay(
                     FontWeight.Normal
             )
         }
+
+        if (holidayItem != null){
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 3.dp)
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(shape = RoundedCornerShape(2.dp))
+                    .background(DefaultGreen)
+            )
+        }
     }
 }
 
@@ -511,7 +531,7 @@ fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
     this.then(
         if (boolean) {
             border(
-                width = 2.dp,
+                width = 1.dp,
                 color = grayColor(isSystemInDarkTheme()),
                 shape = RoundedCornerShape(10.dp)
             )
@@ -521,7 +541,7 @@ fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
     )
 }
 
-fun Modifier.dayDateBorder(boolean: Boolean, color: Color) = this.then(
+fun Modifier.todayBackground(boolean: Boolean, color: Color) = this.then(
     if (boolean) {
         background(color)
     } else {
@@ -599,7 +619,7 @@ fun CalendarDayPreview() {
     CalendarDay(
         height = boxHeight,
         displayDate = currentDate,
-        isToday = true,
+        holidayItem = null,
         isSelected = true,
         dayInDisplayMonth = true,
         onSelectDate = {}
