@@ -32,7 +32,7 @@ class HolidayRepositoryImpl @Inject constructor(
 
             DlogUtil.d(MyTag, "Check RoomDB $year localData: $localData")
 
-            if (localData.isEmpty()){
+            if (localData.isEmpty()) {
                 when (val remoteResult = remoteHolidaySource.getHoliday(year)) {
                     is ApiResult.Success -> {
                         // 리모트 데이터를 로컬 데이터베이스에 저장
@@ -42,9 +42,11 @@ class HolidayRepositoryImpl @Inject constructor(
                             }
                         )
                     }
+
                     is ApiResult.ApiError -> {
                         // 에러 처리 로직 추가
                     }
+
                     is ApiResult.NetworkError -> {
                         // 네트워크 에러 처리 로직 추가
                     }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -25,6 +26,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,8 +54,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.ljb.data.DlogUtil
-import com.ljb.data.MyTag
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultGreen
 import com.ljb.bumscheduler.ui.theme.DefaultRed
@@ -62,6 +62,8 @@ import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import com.ljb.bumscheduler.viewmodel.CalendarEvent
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
+import com.ljb.data.DlogUtil
+import com.ljb.data.MyTag
 import com.ljb.data.mapper.allMonth
 import com.ljb.data.mapper.currentDate
 import com.ljb.data.mapper.formatMonth
@@ -193,7 +195,7 @@ fun CalendarAppBar(
                                 shape = RoundedCornerShape(4.dp)
                             ),
                         contentAlignment = Alignment.Center
-                    ){
+                    ) {
                         Text(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -281,7 +283,7 @@ fun HorizontalCalendar(
     pagerState: PagerState,
     viewModel: CalendarViewModel
 ) {
-    LaunchedEffect(pagerState){
+    LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect {
             val pagedMonth = LocalDate.of(
                 yearRange.first + it / 12,
@@ -314,11 +316,11 @@ fun HorizontalCalendar(
 @Composable
 fun HorizontalScheduler(
     viewModel: CalendarViewModel
-){
+) {
     val monthDate by viewModel.calendarMonth.collectAsState()
     val selectedDate by viewModel.selectDate.collectAsState()
 
-    val days = (1..monthDate.lengthOfMonth()).toList().map{
+    val days = (1..monthDate.lengthOfMonth()).toList().map {
         monthDate.withDayOfMonth(it)
     }
 
@@ -327,11 +329,11 @@ fun HorizontalScheduler(
     HorizontalPager(
         state = schedulerState,
         pageCount = days.size
-    ){ page ->
+    ) { page ->
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
-        ){
+        ) {
             Text(text = "${days[page]}")
         }
     }
@@ -343,7 +345,7 @@ fun HorizontalScheduler(
         }
     }
 
-    LaunchedEffect(monthDate){
+    LaunchedEffect(monthDate) {
         snapshotFlow { selectedDate }.collectLatest {
             schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
         }
@@ -373,7 +375,7 @@ fun CalendarGrid(
 
 
     // 표시 Week 크기를 같게 위해 박스 크기 조절 (270)
-    val boxHeight = if (totalGridCount <= 35){
+    val boxHeight = if (totalGridCount <= 35) {
         54.dp
     } else {
         45.dp
@@ -383,11 +385,11 @@ fun CalendarGrid(
     val displayDateList = mutableListOf<LocalDate>()
 
     // 이전 달의 일부 LocalDate 추가 부분
-    if (firstDayColumn < 7){
+    if (firstDayColumn < 7) {
         val prevMonth = calendarDate.minusMonths(1)
         val prevLastDay = prevMonth.lengthOfMonth()
 
-        (prevLastDay - firstDayColumn + 1 .. prevLastDay).forEach {
+        (prevLastDay - firstDayColumn + 1..prevLastDay).forEach {
             displayDateList.add(
                 prevMonth.withDayOfMonth(it)
             )
@@ -403,14 +405,14 @@ fun CalendarGrid(
 
     // 다음 달의 LocalDate 추가 부분
     val nextMonth = calendarDate.plusMonths(1)
-    if (afterBoxCount != 0){            // 다음 달의 일부 LocalDate 존재할 때 추가
-        (1 .. afterBoxCount).forEach {
+    if (afterBoxCount != 0) {            // 다음 달의 일부 LocalDate 존재할 때 추가
+        (1..afterBoxCount).forEach {
             displayDateList.add(
                 nextMonth.withDayOfMonth(it)
             )
         }
     } else if (totalGridCount <= 28) {  // 현재 달이 4주 일때는 다음 달 날짜를 7개 더 추가
-        (1 .. 7).toList().forEach {
+        (1..7).toList().forEach {
             displayDateList.add(
                 nextMonth.withDayOfMonth(it)
             )
@@ -419,27 +421,34 @@ fun CalendarGrid(
 
     val selectedDate by viewModel.selectDate.collectAsState()
 
-    val holidayList  by viewModel.holidayList.collectAsState()
+    val holidayList by viewModel.holidayList.collectAsState()
 
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Fixed(7)
     ) {
 
-        items(displayDateList) {  day ->
+        items(displayDateList) { day ->
 
             val holidayItem = holidayList.find { it.localDate == day }
 
-            CalendarDay(
-                height = boxHeight,
-                displayDate = day,
-                holidayItem = holidayItem,
-                isSelected = selectedDate == day,
-                dayInDisplayMonth = day.monthValue == calendarDate.monthValue,
-                onSelectDate = {
-                    viewModel.processEvent(CalendarEvent.SelectDate(it))
-                }
-            )
+            if (day.monthValue == calendarDate.monthValue) {
+                CalendarDay(
+                    height = boxHeight,
+                    displayDate = day,
+                    holidayItem = holidayItem,
+                    isSelected = selectedDate == day,
+                    onSelectDate = {
+                        viewModel.processEvent(CalendarEvent.SelectDate(it))
+                    }
+                )
+            } else {
+                PrevNextDay(
+                    height = boxHeight,
+                    displayDate = day,
+                    holidayItem = holidayItem
+                )
+            }
         }
     }
 }
@@ -450,12 +459,8 @@ fun CalendarDay(
     displayDate: LocalDate,
     holidayItem: Holiday?,
     isSelected: Boolean,
-    dayInDisplayMonth: Boolean,
     onSelectDate: (LocalDate) -> Unit
 ) {
-
-    //TODO 현재달의 날짜가 아닐시 alpha 값 조정 필요
-    
     val isToday = displayDate == currentDate    // 오늘 날짜 Boolean
 
     val dayOfWeek = displayDate.dayOfWeek
@@ -463,16 +468,16 @@ fun CalendarDay(
     val todayBgColor = if (holidayItem?.isHoliday == true) {
         DefaultRed
     } else {
-        when(dayOfWeek){
+        when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
             else -> grayColor(isSystemInDarkTheme())
         }
     }
 
-    val textColor = if(displayDate == currentDate){
+    val textColor = if (isToday) {
         reverseTxtColor(isSystemInDarkTheme())
-    } else if(holidayItem?.isHoliday == true) {
+    } else if (holidayItem?.isHoliday == true) {
         DefaultRed
     } else {
         when (dayOfWeek) {
@@ -487,7 +492,7 @@ fun CalendarDay(
             .height(height)
             .clip(shape = RoundedCornerShape(10.dp))
             .daySelectedBorder(isSelected)                    // 선택 Day Gray Border
-            .noRippleClickable(dayInDisplayMonth) { onSelectDate(displayDate) },
+            .noRippleClickable { onSelectDate(displayDate) },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -502,19 +507,13 @@ fun CalendarDay(
         ) {
             Text(
                 text = displayDate.dayOfMonth.toString(),
-                color = if (dayInDisplayMonth)
-                    textColor
-                else
-                    textColor.copy(alpha = 0.3f),
+                color = textColor,
                 fontSize = 12.sp,
-                fontWeight = if (dayInDisplayMonth)
-                    FontWeight.Bold
-                else
-                    FontWeight.Normal
+                fontWeight = FontWeight.Bold
             )
         }
 
-        if (holidayItem != null){
+        if (holidayItem != null) {
             Box(
                 modifier = Modifier
                     .padding(horizontal = 3.dp)
@@ -522,6 +521,75 @@ fun CalendarDay(
                     .height(4.dp)
                     .clip(shape = RoundedCornerShape(2.dp))
                     .background(DefaultGreen)
+            )
+        }
+    }
+}
+
+@Composable
+fun PrevNextDay(
+    height: Dp,
+    displayDate: LocalDate,
+    holidayItem: Holiday?
+) {
+    val isToday = displayDate == currentDate    // 오늘 날짜 Boolean
+
+    val dayOfWeek = displayDate.dayOfWeek
+
+    val todayBgColor = if (holidayItem?.isHoliday == true) {
+        DefaultRed
+    } else {
+        when (dayOfWeek) {
+            DayOfWeek.SUNDAY -> DefaultRed
+            DayOfWeek.SATURDAY -> DefaultBlue
+            else -> grayColor(isSystemInDarkTheme())
+        }
+    }
+
+    val textColor = if (isToday) {
+        reverseTxtColor(isSystemInDarkTheme())
+    } else if (holidayItem?.isHoliday == true) {
+        DefaultRed
+    } else {
+        when (dayOfWeek) {
+            DayOfWeek.SUNDAY -> DefaultRed
+            DayOfWeek.SATURDAY -> DefaultBlue
+            else -> defaultTxtColor(isSystemInDarkTheme())
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .height(height)
+            .clip(shape = RoundedCornerShape(10.dp)),        // 선택 Day Gray Border
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Box(
+            modifier = Modifier
+                .width(18.dp)
+                .wrapContentHeight()
+                .padding(vertical = 2.dp)
+                .clip(shape = RoundedCornerShape(4.dp))
+                .todayBackground(isToday, todayBgColor.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = displayDate.dayOfMonth.toString(),
+                color = textColor.copy(alpha = 0.3f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
+
+        if (holidayItem != null) {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 3.dp)
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(shape = RoundedCornerShape(2.dp))
+                    .background(DefaultGreen.copy(alpha = 0.3f))
             )
         }
     }
@@ -550,10 +618,10 @@ fun Modifier.todayBackground(boolean: Boolean, color: Color) = this.then(
 )
 
 //Modifier onClick 클릭 효과 제거
-fun Modifier.noRippleClickable(enabled: Boolean, onClick: () -> Unit): Modifier = composed {
+fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
     clickable(
         indication = null,
-        enabled = enabled,
+        //enabled = enabled,
         interactionSource = remember { MutableInteractionSource() }) {
         onClick.invoke()
     }
@@ -610,7 +678,7 @@ fun CalendarDayPreview() {
     val totalGridCount = 35
     val boxHeight = if (totalGridCount <= 28) {
         67.5.dp
-    } else if (totalGridCount <= 35){
+    } else if (totalGridCount <= 35) {
         54.dp
     } else {
         45.dp
@@ -621,7 +689,25 @@ fun CalendarDayPreview() {
         displayDate = currentDate,
         holidayItem = null,
         isSelected = true,
-        dayInDisplayMonth = true,
         onSelectDate = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PrevNextDayPreview() {
+    val totalGridCount = 35
+    val boxHeight = if (totalGridCount <= 28) {
+        67.5.dp
+    } else if (totalGridCount <= 35) {
+        54.dp
+    } else {
+        45.dp
+    }
+
+    PrevNextDay(
+        height = boxHeight,
+        displayDate = currentDate,
+        holidayItem = null,
     )
 }

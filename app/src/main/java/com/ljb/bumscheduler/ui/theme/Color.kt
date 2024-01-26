@@ -12,7 +12,7 @@ val Pink40 = Color(0xFF7D5260)
 
 val DefaultRed = Color(0xFFff4d4d)
 val DefaultBlue = Color(0xFF1a75ff)
-val DefaultGreen = Color(0xFF00b33c)
+val DefaultGreen = Color(0xFF009933)
 
 fun defaultTxtColor(darkTheme: Boolean) = if (darkTheme) Color.White else Color.Black
 fun reverseTxtColor(darkTheme: Boolean) = if (darkTheme) Color.Black else Color.White
