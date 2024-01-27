@@ -9,6 +9,6 @@ plugins {
     id("com.google.dagger.hilt.android") version Versions.hilt apply false
 
 
-    id("org.jetbrains.kotlin.jvm") version "1.9.21" apply false
-    kotlin("plugin.serialization") version "1.9.21" apply false
+    id("org.jetbrains.kotlin.jvm") version Versions.kotlin apply false
+    kotlin("plugin.serialization") version Versions.kotlin apply false
 }

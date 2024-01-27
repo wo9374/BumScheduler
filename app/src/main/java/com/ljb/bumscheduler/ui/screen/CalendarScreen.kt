@@ -83,13 +83,18 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
 
-    val pagerState = rememberPagerState(initialPage = initialPage)
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        initialPageOffsetFraction = 0f
+    ) {
+        allMonth
+    }
 
     val scope = rememberCoroutineScope()
 
@@ -309,7 +314,6 @@ fun HorizontalCalendar(
 
     HorizontalPager(
         state = pagerState,
-        pageCount = allMonth,
         verticalAlignment = Alignment.Top
     ) { page ->
 
@@ -337,11 +341,15 @@ fun HorizontalScheduler(
         monthDate.withDayOfMonth(it)
     }
 
-    val schedulerState = rememberPagerState(initialPage = selectedDate.dayOfMonth - 1)
+    val schedulerState = rememberPagerState(
+        initialPage = selectedDate.dayOfMonth - 1,
+        initialPageOffsetFraction = 0f
+    ) {
+        days.size
+    }
 
     HorizontalPager(
-        state = schedulerState,
-        pageCount = days.size
+        state = schedulerState
     ) { page ->
 
         val holidayList by viewModel.holidayList.collectAsState()
@@ -751,7 +759,7 @@ fun CalendarHeaderPreview() {
 @Composable
 fun HorizontalCalendarPreview() {
     HorizontalCalendar(
-        pagerState = rememberPagerState(initialPage = 2),
+        pagerState = rememberPagerState(initialPage = 2) { 3 },
         viewModel = hiltViewModel(),
     )
 }

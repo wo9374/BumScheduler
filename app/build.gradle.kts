@@ -54,7 +54,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = ComposeVersion.composeCompile
+        kotlinCompilerExtensionVersion = Compose.composeVersion
     }
 }
 
@@ -64,23 +64,22 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
+    implementation(Compose.Implementation.ui)
+    implementation(Compose.Implementation.graphics)
+    implementation(Compose.Implementation.preview)
+    implementation(Compose.Implementation.material3)
+    debugImplementation(Compose.DebugImplementation.uiTooling)
+    debugImplementation(Compose.DebugImplementation.uiTestManifest)
+    androidTestImplementation(Compose.AndroidTestImplementation.junit4)
 
-    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation(LibCompose.Android.activity)
 
-    implementation(LibCompose.Hilt.navigation)
+    implementation(LibCompose.Android.navigation)
+    implementation(LibCompose.Android.hiltNavigation)
 
     implementation(Lib.Dagger.Hilt.core)
     ksp(Lib.Dagger.Hilt.compiler)
