@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,9 +27,9 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,10 +56,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ljb.bumscheduler.R
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultGreen
 import com.ljb.bumscheduler.ui.theme.DefaultRed
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
+import com.ljb.bumscheduler.ui.theme.grayAlpha3
+import com.ljb.bumscheduler.ui.theme.grayAlpha6
 import com.ljb.bumscheduler.ui.theme.grayColor
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import com.ljb.bumscheduler.viewmodel.CalendarEvent
@@ -128,6 +133,14 @@ fun CalendarScreen(
             ).also {
                 DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalCalendar")
             }
+
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 5.dp)
+                    .height(1.dp)
+                    .background(grayAlpha3(isSystemInDarkTheme()))
+            )
 
             HorizontalScheduler(
                 viewModel = viewModel
@@ -330,12 +343,30 @@ fun HorizontalScheduler(
         state = schedulerState,
         pageCount = days.size
     ) { page ->
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "${days[page]}")
+
+        val holidayList by viewModel.holidayList.collectAsState()
+
+        val holidayItem = holidayList.find { it.localDate == days[page] }
+
+        if (holidayItem != null) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item {
+                    SchedulerHoliday(holidayItem)
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(id = R.string.empty_schedule),
+                    fontSize = 14.sp,
+                    color = grayAlpha6(isSystemInDarkTheme())
+                )
+            }
         }
+
     }
 
     LaunchedEffect(monthDate) {
@@ -348,6 +379,61 @@ fun HorizontalScheduler(
     LaunchedEffect(monthDate) {
         snapshotFlow { selectedDate }.collectLatest {
             schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
+        }
+    }
+}
+
+@Composable
+fun SchedulerHoliday(
+    item: Holiday
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp)
+            ) {
+                Icon(
+                    modifier = Modifier.size(22.dp),
+                    imageVector = Icons.Outlined.DateRange,
+                    contentDescription = "DateRange",
+                    tint = defaultTxtColor(isSystemInDarkTheme()),
+                )
+            }
+
+            Spacer(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(22.dp)
+                    .clip(shape = RoundedCornerShape(2.dp))
+                    .background(DefaultGreen)
+            )
+
+            Column(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .padding(start = 8.dp)
+            ) {
+                Text(
+                    text = item.dateName,
+                    color = defaultTxtColor(isSystemInDarkTheme()),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = stringResource(id = R.string.all_day),
+                    color = defaultTxtColor(isSystemInDarkTheme()).copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }
@@ -600,7 +686,7 @@ fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
         if (boolean) {
             border(
                 width = 1.dp,
-                color = grayColor(isSystemInDarkTheme()),
+                color = grayAlpha6(isSystemInDarkTheme()),
                 shape = RoundedCornerShape(10.dp)
             )
         } else {
@@ -625,6 +711,14 @@ fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
         interactionSource = remember { MutableInteractionSource() }) {
         onClick.invoke()
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SchedulerHolidayPreview() {
+    SchedulerHoliday(
+        item = Holiday(currentDate, "신정", true)
+    )
 }
 
 @Preview(showBackground = true)
@@ -687,7 +781,7 @@ fun CalendarDayPreview() {
     CalendarDay(
         height = boxHeight,
         displayDate = currentDate,
-        holidayItem = null,
+        holidayItem = Holiday(currentDate, "신정", true),
         isSelected = true,
         onSelectDate = {}
     )
@@ -708,6 +802,6 @@ fun PrevNextDayPreview() {
     PrevNextDay(
         height = boxHeight,
         displayDate = currentDate,
-        holidayItem = null,
+        holidayItem = Holiday(currentDate, "신정", true),
     )
 }

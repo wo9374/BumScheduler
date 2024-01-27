@@ -10,6 +10,12 @@ fun HolidayResponse.mapperToRoomEntity(): HolidayRoomEntity {
     val month = locdate % 10000 / 100
     val day = locdate % 100
 
+    val dateName = when(dateName){
+        "1월1일" -> "신정"
+        "기독탄신일" -> "크리스마스"
+        else -> dateName
+    }
+
     return HolidayRoomEntity(
         localDate = locdate,
         year = year,

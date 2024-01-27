@@ -5,4 +5,7 @@
     <string name="text_map">Map</string>
     <string name="text_notification">Notification</string>
     <string name="text_setting">Setting</string>
+
+    <string name="all_day">하루 종일</string>
+    <string name="empty_schedule">저장된 일정이 없습니다.</string>
 </resources>
