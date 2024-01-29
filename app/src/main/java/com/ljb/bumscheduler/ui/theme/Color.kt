@@ -16,7 +16,6 @@ val DefaultGreen = Color(0xFF009933)
 
 fun defaultTxtColor(darkTheme: Boolean) = if (darkTheme) Color.White else Color.Black
 fun reverseTxtColor(darkTheme: Boolean) = if (darkTheme) Color.Black else Color.White
-fun grayColor(darkTheme: Boolean) = if (darkTheme) Color.LightGray else Color.DarkGray
-
-fun grayAlpha3(darkTheme: Boolean) = if (darkTheme) Color.LightGray.copy(alpha = 0.3f) else Color.DarkGray.copy(alpha = 0.3f)
-fun grayAlpha6(darkTheme: Boolean) = if (darkTheme) Color.LightGray.copy(alpha = 0.6f) else Color.DarkGray.copy(alpha = 0.6f)
+fun defaultGray(darkTheme: Boolean) = if (darkTheme) Color.DarkGray else Color.LightGray
+fun reverseGray(darkTheme: Boolean) = if (darkTheme) Color.LightGray else Color.DarkGray
+fun grayAlpha3(darkTheme: Boolean) = reverseGray(darkTheme).copy(alpha = 0.3f)

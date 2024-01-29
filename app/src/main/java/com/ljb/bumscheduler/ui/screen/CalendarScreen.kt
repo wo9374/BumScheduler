@@ -60,10 +60,9 @@ import com.ljb.bumscheduler.R
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultGreen
 import com.ljb.bumscheduler.ui.theme.DefaultRed
+import com.ljb.bumscheduler.ui.theme.defaultGray
 import com.ljb.bumscheduler.ui.theme.defaultTxtColor
-import com.ljb.bumscheduler.ui.theme.grayAlpha3
-import com.ljb.bumscheduler.ui.theme.grayAlpha6
-import com.ljb.bumscheduler.ui.theme.grayColor
+import com.ljb.bumscheduler.ui.theme.reverseGray
 import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import com.ljb.bumscheduler.viewmodel.CalendarEvent
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
@@ -144,7 +143,7 @@ fun CalendarScreen(
                     .fillMaxWidth()
                     .padding(vertical = 5.dp)
                     .height(1.dp)
-                    .background(grayAlpha3(isSystemInDarkTheme()))
+                    .background(defaultGray(isSystemInDarkTheme()))
             )
 
             HorizontalScheduler(
@@ -370,7 +369,7 @@ fun HorizontalScheduler(
                 Text(
                     text = stringResource(id = R.string.empty_schedule),
                     fontSize = 14.sp,
-                    color = grayAlpha6(isSystemInDarkTheme())
+                    color = reverseGray(isSystemInDarkTheme())
                 )
             }
         }
@@ -565,7 +564,7 @@ fun CalendarDay(
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
-            else -> grayColor(isSystemInDarkTheme())
+            else -> defaultTxtColor(isSystemInDarkTheme())
         }
     }
 
@@ -636,7 +635,7 @@ fun PrevNextDay(
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
-            else -> grayColor(isSystemInDarkTheme())
+            else -> defaultTxtColor(isSystemInDarkTheme())
         }
     }
 
@@ -694,7 +693,7 @@ fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
         if (boolean) {
             border(
                 width = 1.dp,
-                color = grayAlpha6(isSystemInDarkTheme()),
+                color = reverseGray(isSystemInDarkTheme()),
                 shape = RoundedCornerShape(10.dp)
             )
         } else {

@@ -152,10 +152,21 @@ object Compose {
 object LibCompose {
     const val hiltNavigationVersion = "1.0.0"
 
+    /**
+     * https://github.com/fornewid/naver-map-compose
+     *
+     * composeVersion에 맞는 NaverMap 버전 사용
+     * */
+    const val naverMapVersion = "1.4.1"
+
     object Android {
         const val navigation = "androidx.navigation:navigation-compose:${Versions.navigation}"
         const val hiltNavigation = "androidx.hilt:hilt-navigation-compose:$hiltNavigationVersion"
         const val paging = "androidx.paging:paging-compose:${Versions.paging}"
         const val activity = "androidx.activity:activity-compose:1.8.2"
+    }
+
+    object NaverMap {
+        const val naverMap = "io.github.fornewid:naver-map-compose:$naverMapVersion"
     }
 }
