@@ -3,23 +3,21 @@ package com.ljb.bumscheduler.ui.screen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,19 +25,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ljb.bumscheduler.R
-import com.ljb.bumscheduler.ui.theme.defaultGray
-import com.ljb.bumscheduler.ui.theme.defaultTxtColor
+import com.ljb.bumscheduler.ui.component.ButtonDialog
+import com.ljb.bumscheduler.ui.component.RadioButtonDialog
+import com.ljb.bumscheduler.viewmodel.SettingViewModel
+import com.ljb.data.DlogUtil
+import com.ljb.data.MyTag
 
 @Composable
 fun SettingScreen(
-    //viewModel: CalendarViewModel = hiltViewModel()
+    //viewModel: CalendarViewModel = hiltViewModel(),
+    settingViewModel: SettingViewModel = hiltViewModel()
 ) {
     Scaffold { paddingValues ->
         Column(
@@ -48,171 +53,157 @@ fun SettingScreen(
                 .padding(paddingValues),
             verticalArrangement = Arrangement.Center
         ) {
-            SettingItem(SettingMenu.Holiday) {
+            BtnDialogMenu(
+                iconPainter = painterResource(id = R.drawable.ic_calendar_64px),
+                menuTxt = stringResource(id = R.string.replace_holiday),
+                dialogDescription = stringResource(id = R.string.dialog_delete_holiday)
+            ){
+                //Dialog Confirm
+            }
+
+            BtnDialogMenu(
+                iconPainter = painterResource(id = R.drawable.ic_schedule_64px),
+                menuTxt = stringResource(id = R.string.delete_scheduler),
+                dialogDescription = stringResource(id = R.string.dialog_delete_scheduler)
+            ){
 
             }
 
-            SettingItem(SettingMenu.Schedule) {
-
-            }
-
-            SettingItem(SettingMenu.DarkMode) {
-
-            }
+            RadioDialogMenu(
+                viewModel = settingViewModel,
+                iconPainter = painterResource(id = R.drawable.ic_darkmode_64px),
+                menuTxt = stringResource(id = R.string.setting_darkmode),
+                dialogDescription = stringResource(id = R.string.dialog_setting_darkmode)
+            )
         }
     }
 }
 
-sealed class SettingMenu(
-    val iconPainter: Int,
-    val itemText: String,
-    val expandText: String,
-) {
-    data object Holiday : SettingMenu(
-        R.drawable.ic_calendar_64px,
-        "공휴일 정보 재구성",
-        "모든 공휴일 정보를 삭제 합니다.\n달력 사용시 자동으로 공휴일 정보를 다시 받아옵니다.",
-    )
-
-    data object Schedule : SettingMenu(
-        R.drawable.ic_schedule_64px,
-        "일정 정보 모두 삭제",
-        "저장된 모든 일정 정보를 삭제 합니다.\n삭제를 진행하시겠습니까?",
-    )
-
-    data object DarkMode : SettingMenu(
-        R.drawable.ic_darkmode_64px,
-        "다크모드 설정",
-        "다크모드를 설정합니다.\n",
-    )
-}
-
 @Composable
-fun SettingItem(
-    item: SettingMenu,
-    itemClick: () -> Unit,
+fun BtnDialogMenu(
+    iconPainter: Painter,
+    menuTxt: String,
+    dialogDescription: String,
+    onConfirmDialog: () -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    val imgSize = 20.dp
-    val imgBoxSize = 34.dp
-
-    val menuInnerPadding = 8.dp
+    var showDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .clip(shape = RoundedCornerShape(10.dp))
-            .clickable { expanded = !expanded },
+            .clickable { showDialog = true },
     ) {
+        MenuBar(
+            icon = iconPainter,
+            title = menuTxt
+        )
 
-        Column(
-            modifier = Modifier.padding(menuInnerPadding)
-        ) {
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(imgBoxSize)
-                        .clip(shape = RoundedCornerShape(10.dp))
-                        .background(
-                            defaultGray(isSystemInDarkTheme())
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        modifier = Modifier.size(imgSize),
-                        painter = painterResource(item.iconPainter),
-                        contentDescription = item.itemText,
-                    )
-                }
-
-                Text(
-                    modifier = Modifier.padding(start = menuInnerPadding),
-                    text = item.itemText,
-                    color = defaultTxtColor(isSystemInDarkTheme()),
-                    fontSize = 16.sp,
-                    style = TextStyle(
-                        platformStyle = PlatformTextStyle(
-                            includeFontPadding = false
-                        )
-                    )
-                )
-            }
-
-            if (expanded) {
-                when (item) {
-                    is SettingMenu.Holiday, SettingMenu.Schedule -> {
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight()
-                                .padding(start = imgBoxSize + menuInnerPadding),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                modifier = Modifier.weight(1f),
-                                text = item.expandText,
-                                fontSize = 12.sp,
-                            )
-
-                            BlueButton(btnText = "삭제") {
-                                // BtnClick
-                            }
-                        }
-                    }
-
-                    is SettingMenu.DarkMode -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight()
-                        ) {
-                            Text(
-                                modifier = Modifier.padding(start = imgBoxSize + menuInnerPadding),
-                                text = item.expandText,
-                                fontSize = 12.sp,
-                            )
-
-                            //TODO 다크모드 설정 ui 추가 필요
-                        }
-                    }
-                }
-            }
+        if (showDialog){
+            ButtonDialog(
+                titleIcon = iconPainter,
+                title = menuTxt,
+                description = dialogDescription,
+                onDismissRequest = {
+                    showDialog = false
+                },
+                confirmTxt = "삭제",
+                confirmClicked = onConfirmDialog,
+            )
         }
     }
 }
 
 @Composable
-fun BlueButton(
-    btnText: String,
-    btnClick: () -> Unit
+fun RadioDialogMenu(
+    viewModel: SettingViewModel,
+    iconPainter: Painter,
+    menuTxt: String,
+    dialogDescription: String,
 ) {
-    Button(
-        modifier = Modifier.wrapContentSize(),
-        contentPadding = PaddingValues(12.dp),
-        onClick = btnClick
+    var showDialog by remember { mutableStateOf(false) }
+
+    val darkMode by viewModel.darkModeState.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 14.dp, vertical = 2.dp)
+            .clip(shape = RoundedCornerShape(10.dp))
+            .clickable { showDialog = true },
     ) {
+        MenuBar(
+            icon = iconPainter,
+            title = menuTxt
+        )
+
+        if (showDialog){
+            RadioButtonDialog(
+                titleIcon = iconPainter,
+                title = menuTxt,
+                description = dialogDescription,
+                radioSelected = darkMode,
+                onDismissRequest = { showDialog = false },
+            ){
+                viewModel.setDarkModePrefs(it)
+            }.also {
+                DlogUtil.d(MyTag, "RadioButtonDialog darkMode: $darkMode")
+            }
+        }
+    }
+}
+
+
+@Composable
+fun MenuBar(
+    icon: Painter,
+    title: String
+){
+    val imgSize = 20.dp
+    val imgBoxSize = 34.dp
+    val menuInnerPadding = 8.dp
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(menuInnerPadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(imgBoxSize)
+                .clip(shape = RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.outline),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                modifier = Modifier.size(imgSize),
+                painter = icon,
+                contentDescription = title,
+            )
+        }
+
         Text(
-            text = btnText,
-            fontSize = 12.sp,
+            modifier = Modifier.padding(start = menuInnerPadding),
+            text = title,
+            fontSize = 16.sp,
+            style = TextStyle(
+                platformStyle = PlatformTextStyle(
+                    includeFontPadding = false
+                )
+            )
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun SettingItemPreview() {
-    Column {
-        SettingItem(SettingMenu.Holiday) {}
-        SettingItem(SettingMenu.Schedule) {}
-        SettingItem(SettingMenu.DarkMode) {}
+fun BtnDialogMenuPreview(){
+    BtnDialogMenu(
+        iconPainter = painterResource(id = R.drawable.ic_calendar_64px),
+        menuTxt = stringResource(id = R.string.replace_holiday),
+        dialogDescription = stringResource(id = R.string.dialog_delete_holiday)
+    ){
+
     }
 }

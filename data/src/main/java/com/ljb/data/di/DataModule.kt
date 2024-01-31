@@ -1,6 +1,9 @@
 package com.ljb.data.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import com.ljb.data.database.HolidayDao
 import com.ljb.data.database.HolidayDatabase
 import com.ljb.data.datasource.LocalHolidaySource
@@ -29,7 +32,7 @@ abstract class DataSourceModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DatabaseModule {
+object DataModule {
     @Singleton
     @Provides
     fun provideHolidayDatabase(@ApplicationContext appContext: Context) =
@@ -38,4 +41,15 @@ object DatabaseModule {
     @Singleton
     @Provides
     fun provideHolidayDao(database: HolidayDatabase): HolidayDao = database.dao()
+
+
+    private val Context.darkModeDataStore: DataStore<Preferences> by preferencesDataStore(
+        name = "bum_scheduler_datastore"
+    )
+
+    @Singleton
+    @Provides
+    fun provideDarkModePrefsDataStore(@ApplicationContext appContext: Context) : DataStore<Preferences>{
+        return appContext.darkModeDataStore
+    }
 }

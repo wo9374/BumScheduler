@@ -54,8 +54,7 @@ object Lib {
     }
 
     object DataStore {
-        const val preferencesStore =
-            "androidx.datastore:datastore-preferences:${Versions.dataStore}"
+        const val preferencesStore = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
         const val protoStore = "androidx.datastore:datastore:${Versions.dataStore}"
 
         //Android 종속성 없이 사용 (Multi 모듈용)

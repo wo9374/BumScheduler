@@ -3,6 +3,9 @@ package com.ljb.bumscheduler
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
@@ -18,11 +21,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -51,16 +58,13 @@ const val SETTING = "SETTING"
 sealed class BottomNavItem(
     val title: Int, val icon: ImageVector, val screenRoute: String
 ) {
-    object Calendar : BottomNavItem(R.string.text_calendar, Icons.Rounded.DateRange, CALENDAR)
-    object Map : BottomNavItem(R.string.text_map, Icons.Rounded.LocationOn, MAP)
-    object Notification :
-        BottomNavItem(R.string.text_notification, Icons.Rounded.Notifications, NOTIFICATION)
-
-    object Setting : BottomNavItem(R.string.text_setting, Icons.Rounded.Settings, SETTING)
+    data object Calendar : BottomNavItem(R.string.text_calendar, Icons.Rounded.DateRange, CALENDAR)
+    data object Map : BottomNavItem(R.string.text_map, Icons.Rounded.LocationOn, MAP)
+    data object Notification : BottomNavItem(R.string.text_notification, Icons.Rounded.Notifications, NOTIFICATION)
+    data object Setting : BottomNavItem(R.string.text_setting, Icons.Rounded.Settings, SETTING)
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BumSchedulerApp() {
     val navController = rememberNavController()
@@ -87,21 +91,34 @@ fun BottomNavigationBar(navController: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.background,
+        modifier = Modifier
+            .height(64.dp)
+            .clip(RoundedCornerShape(20.dp, 20.dp, 0.dp, 0.dp))
+
     ) {
         items.forEach { item ->
             NavigationBarItem(
                 icon = {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = "${item.title} Icon"
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = "${item.title} Menu"
+                        )
+
+                        Text(
+                            text = stringResource(id = item.title),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp,
+                        )
+                    }
                 },
                 label = {
-                    Text(
+                    /*Text(
                         text = stringResource(id = item.title),
-                        fontWeight = FontWeight.SemiBold
-                    )
+                        //fontWeight = FontWeight.SemiBold
+                    )*/
                 },
                 selected = currentRoute == item.screenRoute,
                 //alwaysShowLabel = false,

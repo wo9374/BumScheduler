@@ -67,4 +67,6 @@ dependencies {
     implementation(Lib.Room.core)
     ksp(Lib.Room.compiler)
     implementation(Lib.Room.ktx)
+
+    implementation(Lib.DataStore.preferencesStore)
 }

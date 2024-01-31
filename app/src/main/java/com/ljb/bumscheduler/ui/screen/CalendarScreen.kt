@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,9 +32,12 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,10 +62,6 @@ import com.ljb.bumscheduler.R
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultGreen
 import com.ljb.bumscheduler.ui.theme.DefaultRed
-import com.ljb.bumscheduler.ui.theme.defaultGray
-import com.ljb.bumscheduler.ui.theme.defaultTxtColor
-import com.ljb.bumscheduler.ui.theme.reverseGray
-import com.ljb.bumscheduler.ui.theme.reverseTxtColor
 import com.ljb.bumscheduler.viewmodel.CalendarEvent
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
 import com.ljb.data.DlogUtil
@@ -143,7 +141,7 @@ fun CalendarScreen(
                     .fillMaxWidth()
                     .padding(vertical = 5.dp)
                     .height(1.dp)
-                    .background(defaultGray(isSystemInDarkTheme()))
+                    .background(MaterialTheme.colorScheme.onBackground)
             )
 
             HorizontalScheduler(
@@ -169,8 +167,10 @@ fun CalendarAppBar(
 ) {
     TopAppBar(
         modifier = modifier,
-        //colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Magenta),
         title = {},
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
         navigationIcon = {
             // AppBar 크기 변경으로 인한 자동 CenterVertically 적용이 안되어 Box 로 wrap
             Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
@@ -178,7 +178,6 @@ fun CalendarAppBar(
                     Icon(
                         imageVector = Icons.Filled.Menu,
                         contentDescription = "Menu",
-                        tint = defaultTxtColor(isSystemInDarkTheme())
                     )
                 }
             }
@@ -189,7 +188,6 @@ fun CalendarAppBar(
                     Icon(
                         imageVector = Icons.Filled.Search,
                         contentDescription = "Search",
-                        tint = defaultTxtColor(isSystemInDarkTheme())
                     )
                 }
             }
@@ -208,7 +206,7 @@ fun CalendarAppBar(
                             .size(22.dp)
                             .border(
                                 width = 1.dp,
-                                color = defaultTxtColor(isSystemInDarkTheme()),
+                                color = MaterialTheme.colorScheme.onBackground,
                                 shape = RoundedCornerShape(4.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -220,7 +218,6 @@ fun CalendarAppBar(
                             text = currentDate.dayOfMonth.toString(),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = defaultTxtColor(isSystemInDarkTheme()),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -255,7 +252,6 @@ fun CalendarHeader(
             text = displayMonth,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = defaultTxtColor(isSystemInDarkTheme())
         )
 
         // 요일 표시
@@ -273,17 +269,15 @@ fun CalendarHeader(
                 val textColor = when (dayOfWeek) {
                     DayOfWeek.SUNDAY -> DefaultRed
                     DayOfWeek.SATURDAY -> DefaultBlue
-                    else -> defaultTxtColor(isSystemInDarkTheme())
+                    else -> LocalContentColor.current
                 }
 
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    text = dayOfWeek.getDisplayName(
-                        TextStyle.SHORT,
-                        Locale.KOREAN
-                    ), // DayOfWeek 요일 Get 함수, 한국어로 표시
+                    text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN),
+                    // DayOfWeek 요일 Get 함수, 한국어로 표시
                     color = textColor,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
@@ -369,7 +363,7 @@ fun HorizontalScheduler(
                 Text(
                     text = stringResource(id = R.string.empty_schedule),
                     fontSize = 14.sp,
-                    color = reverseGray(isSystemInDarkTheme())
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                 )
             }
         }
@@ -411,7 +405,6 @@ fun SchedulerHoliday(
                     modifier = Modifier.size(22.dp),
                     imageVector = Icons.Outlined.DateRange,
                     contentDescription = "DateRange",
-                    tint = defaultTxtColor(isSystemInDarkTheme()),
                 )
             }
 
@@ -430,14 +423,13 @@ fun SchedulerHoliday(
             ) {
                 Text(
                     text = item.dateName,
-                    color = defaultTxtColor(isSystemInDarkTheme()),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = stringResource(id = R.string.all_day),
-                    color = defaultTxtColor(isSystemInDarkTheme()).copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     fontSize = 12.sp,
                 )
             }
@@ -564,19 +556,19 @@ fun CalendarDay(
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
-            else -> defaultTxtColor(isSystemInDarkTheme())
+            else -> LocalContentColor.current
         }
     }
 
     val textColor = if (isToday) {
-        reverseTxtColor(isSystemInDarkTheme())
+        MaterialTheme.colorScheme.background
     } else if (holidayItem?.isHoliday == true) {
         DefaultRed
     } else {
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
-            else -> defaultTxtColor(isSystemInDarkTheme())
+            else -> LocalContentColor.current
         }
     }
 
@@ -635,19 +627,19 @@ fun PrevNextDay(
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
-            else -> defaultTxtColor(isSystemInDarkTheme())
+            else -> LocalContentColor.current
         }
     }
 
     val textColor = if (isToday) {
-        reverseTxtColor(isSystemInDarkTheme())
+        MaterialTheme.colorScheme.background
     } else if (holidayItem?.isHoliday == true) {
         DefaultRed
     } else {
         when (dayOfWeek) {
             DayOfWeek.SUNDAY -> DefaultRed
             DayOfWeek.SATURDAY -> DefaultBlue
-            else -> defaultTxtColor(isSystemInDarkTheme())
+            else -> LocalContentColor.current
         }
     }
 
@@ -693,7 +685,7 @@ fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
         if (boolean) {
             border(
                 width = 1.dp,
-                color = reverseGray(isSystemInDarkTheme()),
+                color = MaterialTheme.colorScheme.onBackground,
                 shape = RoundedCornerShape(10.dp)
             )
         } else {

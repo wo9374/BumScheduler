@@ -1,6 +1,8 @@
 package com.ljb.data.di
 
+import com.ljb.data.repository.DataStoreRepositoryImpl
 import com.ljb.data.repository.HolidayRepositoryImpl
+import com.ljb.domain.repository.DataStoreRepository
 import com.ljb.domain.repository.HolidayRepository
 import dagger.Binds
 import dagger.Module
@@ -13,4 +15,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindHolidayRepository(impl: HolidayRepositoryImpl): HolidayRepository
+
+    @Binds
+    abstract fun bindDataStoreRepository(impl: DataStoreRepositoryImpl): DataStoreRepository
 }

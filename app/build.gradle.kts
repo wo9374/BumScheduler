@@ -85,4 +85,6 @@ dependencies {
     ksp(Lib.Dagger.Hilt.compiler)
 
     //implementation(LibCompose.NaverMap.naverMap)
+
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.30.1")
 }
