@@ -2,9 +2,7 @@ package com.ljb.bumscheduler.ui.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,14 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +54,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ljb.bumscheduler.R
+import com.ljb.bumscheduler.ui.component.bgBorder
+import com.ljb.bumscheduler.ui.component.bgToday
+import com.ljb.bumscheduler.ui.component.noRippleClickable
+import com.ljb.bumscheduler.ui.component.topHorizontalBorder
 import com.ljb.bumscheduler.ui.theme.DefaultBlue
 import com.ljb.bumscheduler.ui.theme.DefaultGreen
 import com.ljb.bumscheduler.ui.theme.DefaultRed
@@ -140,8 +139,12 @@ fun CalendarScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 5.dp)
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.onBackground)
+                    .topHorizontalBorder(
+                        strokeWidth = 0.3.dp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        cornerRadiusDp = 0.dp
+                    )
+                    //.background(MaterialTheme.colorScheme.onBackground)
             )
 
             HorizontalScheduler(
@@ -204,10 +207,10 @@ fun CalendarAppBar(
                     Box(
                         modifier = Modifier
                             .size(22.dp)
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                shape = RoundedCornerShape(4.dp)
+                            .bgBorder(
+                                strokeWidth = 0.5.dp,
+                                cornerRadiusDp = 4.dp,
+                                enabled = true
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -576,7 +579,12 @@ fun CalendarDay(
         modifier = Modifier
             .height(height)
             .clip(shape = RoundedCornerShape(10.dp))
-            .daySelectedBorder(isSelected)                    // 선택 Day Gray Border
+            // 선택 Day Gray Border
+            .bgBorder(
+                strokeWidth = 0.5.dp,
+                cornerRadiusDp = 10.dp,
+                enabled = isSelected
+            )
             .noRippleClickable { onSelectDate(displayDate) },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -587,7 +595,7 @@ fun CalendarDay(
                 .wrapContentHeight()
                 .padding(vertical = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .todayBackground(isToday, todayBgColor),
+                .bgToday(isToday, todayBgColor),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -656,7 +664,7 @@ fun PrevNextDay(
                 .wrapContentHeight()
                 .padding(vertical = 2.dp)
                 .clip(shape = RoundedCornerShape(4.dp))
-                .todayBackground(isToday, todayBgColor.copy(alpha = 0.3f)),
+                .bgToday(isToday, todayBgColor.copy(alpha = 0.3f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -677,38 +685,6 @@ fun PrevNextDay(
                     .background(DefaultGreen.copy(alpha = 0.3f))
             )
         }
-    }
-}
-
-fun Modifier.daySelectedBorder(boolean: Boolean) = composed {
-    this.then(
-        if (boolean) {
-            border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.onBackground,
-                shape = RoundedCornerShape(10.dp)
-            )
-        } else {
-            this
-        }
-    )
-}
-
-fun Modifier.todayBackground(boolean: Boolean, color: Color) = this.then(
-    if (boolean) {
-        background(color)
-    } else {
-        this
-    }
-)
-
-//Modifier onClick 클릭 효과 제거
-fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
-    clickable(
-        indication = null,
-        //enabled = enabled,
-        interactionSource = remember { MutableInteractionSource() }) {
-        onClick.invoke()
     }
 }
 

@@ -18,7 +18,7 @@ import com.ljb.data.repository.DARK_MODE
 import com.ljb.data.repository.LIGHT_MODE
 
 private val LightColorScheme = lightColorScheme(
-    primary =  Color.White,          //Button
+    primary =  Color.White,
     onPrimary = Color.Black,
 
     background = Color.White,
@@ -27,6 +27,8 @@ private val LightColorScheme = lightColorScheme(
     surface = Color.White,
     onSurface = Color.Black,
     onSurfaceVariant = Color.Black,
+
+    secondaryContainer = White95
 )
 
 
@@ -40,6 +42,8 @@ private val DarkColorScheme = darkColorScheme(
     surface = Black10,
     onSurface = Color.White,
     onSurfaceVariant = Color.White,
+
+    secondaryContainer = Black10
 )
 
 @Composable

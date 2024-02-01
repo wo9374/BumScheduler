@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,13 +12,11 @@ import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +34,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ljb.bumscheduler.navigation.MainNavGraph
+import com.ljb.bumscheduler.ui.component.topHorizontalBorder
 import com.ljb.bumscheduler.ui.theme.BumSchedulerTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -90,14 +90,21 @@ fun BottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar(
+    Row(
         modifier = Modifier
             .height(64.dp)
             .clip(RoundedCornerShape(20.dp, 20.dp, 0.dp, 0.dp))
-
+            .topHorizontalBorder(
+                strokeWidth = 0.5.dp,
+                color = MaterialTheme.colorScheme.onBackground,
+                cornerRadiusDp = 20.dp
+            )
     ) {
         items.forEach { item ->
             NavigationBarItem(
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
+                ),
                 icon = {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -114,14 +121,14 @@ fun BottomNavigationBar(navController: NavHostController) {
                         )
                     }
                 },
-                label = {
-                    /*Text(
+                /*label = {
+                    Text(
                         text = stringResource(id = item.title),
                         //fontWeight = FontWeight.SemiBold
-                    )*/
+                    )
                 },
+                alwaysShowLabel = false,*/
                 selected = currentRoute == item.screenRoute,
-                //alwaysShowLabel = false,
                 onClick = {
                     navController.navigate(item.screenRoute) {
                         popUpTo(navController.graph.findStartDestination().id) {

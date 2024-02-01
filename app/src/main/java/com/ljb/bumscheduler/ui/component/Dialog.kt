@@ -292,7 +292,7 @@ fun DarkModeView(
     }
 }
 
-/*@Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun ButtonDialogPreview() {
     val iconPainter = painterResource(id = R.drawable.ic_calendar_64px)
@@ -307,7 +307,7 @@ fun ButtonDialogPreview() {
         confirmTxt = "삭제",
         confirmClicked = {},
     )
-}*/
+}
 
 @Preview(showBackground = true)
 @Composable
