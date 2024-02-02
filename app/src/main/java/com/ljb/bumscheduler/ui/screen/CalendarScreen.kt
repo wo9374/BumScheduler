@@ -45,6 +45,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,13 +66,20 @@ import com.ljb.bumscheduler.viewmodel.CalendarEvent
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
 import com.ljb.data.DlogUtil
 import com.ljb.data.MyTag
+import com.ljb.data.datasource.LocalHolidaySourceImpl
+import com.ljb.data.datasource.RemoteHolidaySourceImpl
+import com.ljb.data.di.DataModule
+import com.ljb.data.di.NetworkModule
 import com.ljb.data.mapper.allMonth
 import com.ljb.data.mapper.currentDate
 import com.ljb.data.mapper.formatMonth
 import com.ljb.data.mapper.formatYearMonth
 import com.ljb.data.mapper.initialPage
 import com.ljb.data.mapper.yearRange
+import com.ljb.data.repository.HolidayRepositoryImpl
 import com.ljb.domain.model.Holiday
+import com.ljb.domain.usecase.GetHolidayUseCase
+import com.ljb.domain.usecase.RequestHolidayUseCase
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -144,7 +152,7 @@ fun CalendarScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         cornerRadiusDp = 0.dp
                     )
-                    //.background(MaterialTheme.colorScheme.onBackground)
+                //.background(MaterialTheme.colorScheme.onBackground)
             )
 
             HorizontalScheduler(
@@ -235,13 +243,14 @@ fun CalendarHeader(
     modifier: Modifier,
     viewModel: CalendarViewModel
 ) {
+    val monthDate by viewModel.calendarMonth.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val monthDate by viewModel.calendarMonth.collectAsState()
 
         // 현재 년도면 월만 표시
         val displayMonth = if (monthDate.year == currentDate.year) {
@@ -690,14 +699,6 @@ fun PrevNextDay(
 
 @Preview(showBackground = true)
 @Composable
-fun SchedulerHolidayPreview() {
-    SchedulerHoliday(
-        item = Holiday(currentDate, "신정", true)
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
 fun CalendarAppBar() {
     CalendarAppBar(
         menuClicked = {
@@ -715,28 +716,35 @@ fun CalendarAppBar() {
 @Preview(showBackground = true)
 @Composable
 fun CalendarHeaderPreview() {
+    val impl = HolidayRepositoryImpl(
+        LocalHolidaySourceImpl(
+            DataModule.provideHolidayDao(
+                DataModule.provideHolidayDatabase(LocalContext.current)
+            )
+        ),
+        RemoteHolidaySourceImpl(NetworkModule.provideHttpClient())
+    )
+
     CalendarHeader(
         modifier = Modifier.padding(horizontal = 10.dp),
-        viewModel = hiltViewModel()
-    )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Preview(showBackground = true)
-@Composable
-fun HorizontalCalendarPreview() {
-    HorizontalCalendar(
-        pagerState = rememberPagerState(initialPage = 2) { 3 },
-        viewModel = hiltViewModel(),
+        viewModel = CalendarViewModel(RequestHolidayUseCase(impl), GetHolidayUseCase(impl))
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CalendarGridPreview() {
+    val impl = HolidayRepositoryImpl(
+        LocalHolidaySourceImpl(
+            DataModule.provideHolidayDao(
+                DataModule.provideHolidayDatabase(LocalContext.current)
+            )
+        ),
+        RemoteHolidaySourceImpl(NetworkModule.provideHttpClient())
+    )
     CalendarGrid(
         modifier = Modifier.padding(horizontal = 10.dp),
-        viewModel = hiltViewModel(),
+        viewModel = CalendarViewModel(RequestHolidayUseCase(impl), GetHolidayUseCase(impl)),
         calendarDate = currentDate,
     )
 }
@@ -778,5 +786,13 @@ fun PrevNextDayPreview() {
         height = boxHeight,
         displayDate = currentDate,
         holidayItem = Holiday(currentDate, "신정", true),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SchedulerHolidayPreview() {
+    SchedulerHoliday(
+        item = Holiday(currentDate, "신정", true)
     )
 }

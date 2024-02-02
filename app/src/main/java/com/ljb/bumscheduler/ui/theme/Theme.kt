@@ -1,5 +1,6 @@
 package com.ljb.bumscheduler.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -10,9 +11,10 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ljb.bumscheduler.viewmodel.SettingViewModel
 import com.ljb.data.repository.DARK_MODE
 import com.ljb.data.repository.LIGHT_MODE
@@ -63,7 +65,7 @@ fun BumSchedulerTheme(
 
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
+            //val context = LocalContext.current
             //if (darkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (darkMode) DarkColorScheme else LightColorScheme
         }
@@ -72,33 +74,22 @@ fun BumSchedulerTheme(
         else -> LightColorScheme
     }
 
-    val systemUiController = rememberSystemUiController()
-    SideEffect {
-        systemUiController.apply {
-            setStatusBarColor(
-                color = colorScheme.background,
-                darkIcons = !darkMode
-            )
-            setNavigationBarColor(
-                color = colorScheme.background,
-                darkIcons = !darkMode
-            )
-        }
-    }
-
-    //스테이터스 바, 시스템 네비게이션 바 의 기본 Text, Icon Color 변경을 위해 accompanist-systemuicontroller 사용
-    /*val view = LocalView.current
+    val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            window.navigationBarColor = colorScheme.primary.toArgb()
+            val bgColor = colorScheme.background.toArgb()
 
-            val insetController = WindowCompat.getInsetsController(window, view)
-            insetController.isAppearanceLightStatusBars = darkMode
-            insetController.isAppearanceLightNavigationBars = darkMode
+            val window = (view.context as Activity).window.apply {
+                statusBarColor = bgColor
+                navigationBarColor = bgColor
+            }
+
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkMode
+                isAppearanceLightNavigationBars = !darkMode
+            }
         }
-    }*/
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

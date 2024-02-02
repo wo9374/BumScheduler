@@ -77,14 +77,13 @@ dependencies {
     androidTestImplementation(Compose.AndroidTestImplementation.junit4)
 
     implementation(LibCompose.Android.activity)
-
     implementation(LibCompose.Android.navigation)
     implementation(LibCompose.Android.hiltNavigation)
 
     implementation(Lib.Dagger.Hilt.core)
     ksp(Lib.Dagger.Hilt.compiler)
 
-    //implementation(LibCompose.NaverMap.naverMap)
+    implementation(Lib.Ktor.core)
 
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.30.1")
+    //implementation(LibCompose.NaverMap.naverMap)
 }
