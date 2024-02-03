@@ -7,15 +7,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RequestHolidayUseCase @Inject constructor(private val repository: HolidayRepository) {
-    suspend operator fun invoke(reqYear: Int) {
-        return repository.requestHolidays(reqYear)
-    }
+class GetHolidayUseCase @Inject constructor(private val repository: HolidayRepository) {
+    operator fun invoke(): Flow<List<Holiday>> = repository.getAllHolidays()
 }
 
 @Singleton
-class GetHolidayUseCase @Inject constructor(private val repository: HolidayRepository){
-    operator fun invoke(): Flow<List<Holiday>> {
-        return repository.getAllHolidays()
-    }
+class RequestHolidayUseCase @Inject constructor(private val repository: HolidayRepository) {
+    suspend operator fun invoke(reqYear: Int) = repository.requestHolidays(reqYear)
+}
+
+@Singleton
+class ClearHolidayUseCase @Inject constructor(private val repository: HolidayRepository) {
+    suspend operator fun invoke() = repository.clearHolidays()
 }

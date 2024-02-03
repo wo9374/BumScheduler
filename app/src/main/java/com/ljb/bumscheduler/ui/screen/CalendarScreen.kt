@@ -45,7 +45,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,20 +65,13 @@ import com.ljb.bumscheduler.viewmodel.CalendarEvent
 import com.ljb.bumscheduler.viewmodel.CalendarViewModel
 import com.ljb.data.DlogUtil
 import com.ljb.data.MyTag
-import com.ljb.data.datasource.LocalHolidaySourceImpl
-import com.ljb.data.datasource.RemoteHolidaySourceImpl
-import com.ljb.data.di.DataModule
-import com.ljb.data.di.NetworkModule
 import com.ljb.data.mapper.allMonth
 import com.ljb.data.mapper.currentDate
 import com.ljb.data.mapper.formatMonth
 import com.ljb.data.mapper.formatYearMonth
 import com.ljb.data.mapper.initialPage
 import com.ljb.data.mapper.yearRange
-import com.ljb.data.repository.HolidayRepositoryImpl
 import com.ljb.domain.model.Holiday
-import com.ljb.domain.usecase.GetHolidayUseCase
-import com.ljb.domain.usecase.RequestHolidayUseCase
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -152,7 +144,6 @@ fun CalendarScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         cornerRadiusDp = 0.dp
                     )
-                //.background(MaterialTheme.colorScheme.onBackground)
             )
 
             HorizontalScheduler(
@@ -716,50 +707,133 @@ fun CalendarAppBar() {
 @Preview(showBackground = true)
 @Composable
 fun CalendarHeaderPreview() {
-    val impl = HolidayRepositoryImpl(
-        LocalHolidaySourceImpl(
-            DataModule.provideHolidayDao(
-                DataModule.provideHolidayDatabase(LocalContext.current)
-            )
-        ),
-        RemoteHolidaySourceImpl(NetworkModule.provideHttpClient())
-    )
+    val monthDate = currentDate
+    val modifier = Modifier.padding(horizontal = 10.dp)
 
-    CalendarHeader(
-        modifier = Modifier.padding(horizontal = 10.dp),
-        viewModel = CalendarViewModel(RequestHolidayUseCase(impl), GetHolidayUseCase(impl))
-    )
+    Column(
+        modifier = modifier.fillMaxWidth().padding(bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val displayMonth = if (monthDate.year == currentDate.year) {
+            monthDate.format(formatMonth)
+        } else {
+            monthDate.format(formatYearMonth)
+        }
+
+        Text(
+            text = displayMonth,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Row(modifier = Modifier.padding(top = 12.dp)) {
+            val daysOfWeek = DayOfWeek.values()
+            val firstDayIndex = daysOfWeek.indexOf(DayOfWeek.SUNDAY)
+            val rotatedDays = daysOfWeek.drop(firstDayIndex) + daysOfWeek.take(firstDayIndex)
+
+            for (dayOfWeek in rotatedDays) {
+                val textColor = when (dayOfWeek) {
+                    DayOfWeek.SUNDAY -> DefaultRed
+                    DayOfWeek.SATURDAY -> DefaultBlue
+                    else -> LocalContentColor.current
+                }
+
+                Text(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN),
+                    color = textColor,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CalendarGridPreview() {
-    val impl = HolidayRepositoryImpl(
-        LocalHolidaySourceImpl(
-            DataModule.provideHolidayDao(
-                DataModule.provideHolidayDatabase(LocalContext.current)
-            )
-        ),
-        RemoteHolidaySourceImpl(NetworkModule.provideHttpClient())
-    )
-    CalendarGrid(
-        modifier = Modifier.padding(horizontal = 10.dp),
-        viewModel = CalendarViewModel(RequestHolidayUseCase(impl), GetHolidayUseCase(impl)),
-        calendarDate = currentDate,
-    )
+    val modifier = Modifier.padding(horizontal = 10.dp)
+    val calendarDate = currentDate
+    val holidayList = emptyList<Holiday>()
+
+
+
+    val lastDay = calendarDate.lengthOfMonth()
+    val firstDayColumn = calendarDate.dayOfWeek.value
+    val lastDayColumn = (firstDayColumn + lastDay - 1) % 7
+
+    val afterBoxCount = 7 - lastDayColumn - 1
+
+    var totalGridCount = lastDay
+    if (firstDayColumn != 7) totalGridCount += firstDayColumn
+    if (afterBoxCount != 7) totalGridCount += afterBoxCount
+
+    val boxHeight = if (totalGridCount <= 35) { 54.dp } else { 45.dp }
+
+    val displayDateList = mutableListOf<LocalDate>()
+
+    if (firstDayColumn < 7) {
+        val prevMonth = calendarDate.minusMonths(1)
+        val prevLastDay = prevMonth.lengthOfMonth()
+
+        (prevLastDay - firstDayColumn + 1..prevLastDay).forEach {
+            displayDateList.add(prevMonth.withDayOfMonth(it))
+        }
+    }
+
+    IntRange(1, lastDay).forEach {
+        displayDateList.add(
+            calendarDate.withDayOfMonth(it)
+        )
+    }
+
+    val nextMonth = calendarDate.plusMonths(1)
+    if (afterBoxCount != 0) {            // 다음 달의 일부 LocalDate 존재할 때 추가
+        (1..afterBoxCount).forEach {
+            displayDateList.add(nextMonth.withDayOfMonth(it))
+        }
+    } else if (totalGridCount <= 28) {  // 현재 달이 4주 일때는 다음 달 날짜를 7개 더 추가
+        (1..7).toList().forEach {
+            displayDateList.add(nextMonth.withDayOfMonth(it))
+        }
+    }
+
+    LazyVerticalGrid(
+        modifier = modifier,
+        columns = GridCells.Fixed(7)
+    ) {
+
+        items(displayDateList) { day ->
+            val holidayItem = holidayList.find { it.localDate == day }
+
+            if (day.monthValue == calendarDate.monthValue) {
+                CalendarDay(
+                    height = boxHeight,
+                    displayDate = day,
+                    holidayItem = holidayItem,
+                    isSelected = currentDate == day,
+                    onSelectDate = {}
+                )
+            } else {
+                PrevNextDay(
+                    height = boxHeight,
+                    displayDate = day,
+                    holidayItem = holidayItem
+                )
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CalendarDayPreview() {
     val totalGridCount = 35
-    val boxHeight = if (totalGridCount <= 28) {
-        67.5.dp
-    } else if (totalGridCount <= 35) {
-        54.dp
-    } else {
-        45.dp
-    }
+    val boxHeight = if (totalGridCount <= 28) { 67.5.dp }
+    else if (totalGridCount <= 35) { 54.dp }
+    else { 45.dp }
 
     CalendarDay(
         height = boxHeight,
@@ -774,13 +848,9 @@ fun CalendarDayPreview() {
 @Composable
 fun PrevNextDayPreview() {
     val totalGridCount = 35
-    val boxHeight = if (totalGridCount <= 28) {
-        67.5.dp
-    } else if (totalGridCount <= 35) {
-        54.dp
-    } else {
-        45.dp
-    }
+    val boxHeight = if (totalGridCount <= 28) { 67.5.dp }
+    else if (totalGridCount <= 35) { 54.dp }
+    else { 45.dp }
 
     PrevNextDay(
         height = boxHeight,

@@ -83,7 +83,5 @@ dependencies {
     implementation(Lib.Dagger.Hilt.core)
     ksp(Lib.Dagger.Hilt.compiler)
 
-    implementation(Lib.Ktor.core)
-
     //implementation(LibCompose.NaverMap.naverMap)
 }

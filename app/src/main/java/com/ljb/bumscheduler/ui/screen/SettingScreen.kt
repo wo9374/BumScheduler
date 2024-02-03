@@ -37,13 +37,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ljb.bumscheduler.R
 import com.ljb.bumscheduler.ui.component.ButtonDialog
 import com.ljb.bumscheduler.ui.component.RadioButtonDialog
+import com.ljb.bumscheduler.viewmodel.CalendarEvent
+import com.ljb.bumscheduler.viewmodel.CalendarViewModel
 import com.ljb.bumscheduler.viewmodel.SettingViewModel
-import com.ljb.data.DlogUtil
-import com.ljb.data.MyTag
+import com.ljb.data.repository.DEVICE_MODE
 
 @Composable
 fun SettingScreen(
-    //viewModel: CalendarViewModel = hiltViewModel(),
+    calendarViewModel: CalendarViewModel = hiltViewModel(),
     settingViewModel: SettingViewModel = hiltViewModel()
 ) {
     Scaffold { paddingValues ->
@@ -57,15 +58,15 @@ fun SettingScreen(
                 iconPainter = painterResource(id = R.drawable.ic_calendar_64px),
                 menuTxt = stringResource(id = R.string.replace_holiday),
                 dialogDescription = stringResource(id = R.string.dialog_delete_holiday)
-            ){
-                //Dialog Confirm
+            ) {
+                calendarViewModel.processEvent(CalendarEvent.ClearHoliday)
             }
 
             BtnDialogMenu(
                 iconPainter = painterResource(id = R.drawable.ic_schedule_64px),
                 menuTxt = stringResource(id = R.string.delete_scheduler),
                 dialogDescription = stringResource(id = R.string.dialog_delete_scheduler)
-            ){
+            ) {
 
             }
 
@@ -99,7 +100,7 @@ fun BtnDialogMenu(
             title = menuTxt
         )
 
-        if (showDialog){
+        if (showDialog) {
             ButtonDialog(
                 titleIcon = iconPainter,
                 title = menuTxt,
@@ -119,11 +120,9 @@ fun RadioDialogMenu(
     viewModel: SettingViewModel,
     iconPainter: Painter,
     menuTxt: String,
-    dialogDescription: String,
+    dialogDescription: String
 ) {
     var showDialog by remember { mutableStateOf(false) }
-
-    val darkMode by viewModel.darkModeState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -136,18 +135,19 @@ fun RadioDialogMenu(
             title = menuTxt
         )
 
-        if (showDialog){
+        val darkModeState by viewModel.darkModeState.collectAsState()
+
+        if (showDialog) {
             RadioButtonDialog(
                 titleIcon = iconPainter,
                 title = menuTxt,
                 description = dialogDescription,
-                radioSelected = darkMode,
+                radioSelected = darkModeState,
                 onDismissRequest = { showDialog = false },
-            ){
-                viewModel.setDarkModePrefs(it)
-            }.also {
-                DlogUtil.d(MyTag, "RadioButtonDialog darkMode: $darkMode")
-            }
+                onRadioSelected = {
+                    viewModel.setDarkModePrefs(it)
+                }
+            )
         }
     }
 }
@@ -157,7 +157,7 @@ fun RadioDialogMenu(
 fun MenuBar(
     icon: Painter,
     title: String
-){
+) {
     val imgSize = 20.dp
     val imgBoxSize = 34.dp
     val menuInnerPadding = 8.dp
@@ -198,12 +198,59 @@ fun MenuBar(
 
 @Preview(showBackground = true)
 @Composable
-fun BtnDialogMenuPreview(){
-    BtnDialogMenu(
-        iconPainter = painterResource(id = R.drawable.ic_calendar_64px),
-        menuTxt = stringResource(id = R.string.replace_holiday),
-        dialogDescription = stringResource(id = R.string.dialog_delete_holiday)
-    ){
+fun BtnDialogMenuPreview() {
+    var showDialog by remember { mutableStateOf(true) }
 
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 14.dp, vertical = 2.dp)
+            .clip(shape = RoundedCornerShape(10.dp))
+            .clickable { showDialog = true },
+    ) {
+        MenuBar(
+            icon = painterResource(id = R.drawable.ic_calendar_64px),
+            title = stringResource(id = R.string.replace_holiday)
+        )
+
+        if (showDialog) {
+            ButtonDialog(
+                titleIcon = painterResource(id = R.drawable.ic_calendar_64px),
+                title = stringResource(id = R.string.replace_holiday),
+                description = stringResource(id = R.string.dialog_delete_holiday),
+                onDismissRequest = {},
+                confirmTxt = "삭제",
+                confirmClicked = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RadioDialogMenuPreview() {
+    var showDialog by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 14.dp, vertical = 2.dp)
+            .clip(shape = RoundedCornerShape(10.dp))
+            .clickable { showDialog = true },
+    ) {
+        MenuBar(
+            icon = painterResource(id = R.drawable.ic_darkmode_64px),
+            title = stringResource(id = R.string.setting_darkmode)
+        )
+
+        if (showDialog) {
+            RadioButtonDialog(
+                titleIcon = painterResource(id = R.drawable.ic_darkmode_64px),
+                title = stringResource(id = R.string.setting_darkmode),
+                description = stringResource(id = R.string.dialog_setting_darkmode),
+                radioSelected = DEVICE_MODE,
+                onDismissRequest = {},
+            ) {
+
+            }
+        }
     }
 }

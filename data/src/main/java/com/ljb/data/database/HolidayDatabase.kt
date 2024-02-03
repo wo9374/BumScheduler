@@ -21,7 +21,7 @@ abstract class HolidayDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): HolidayDatabase {
             return instance ?: kotlin.run {
-                synchronized(this){
+                synchronized(this) {
                     val tempInstance = Room.databaseBuilder(
                         context,
                         HolidayDatabase::class.java,
@@ -46,4 +46,7 @@ interface HolidayDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE) // ABORT - 트랙잭션 중 에러가 발생하면 중지하고 전부를 롤백, IGNORE - 에러를 만나도 무시하고 계속 진행
     suspend fun insertHoliday(vararg holidayRoomEntity: HolidayRoomEntity)
+
+    @Query("DELETE FROM holidays")
+    suspend fun clearHolidays()
 }

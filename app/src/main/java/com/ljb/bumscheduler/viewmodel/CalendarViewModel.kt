@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ljb.bumscheduler.base.UiEvent
 import com.ljb.data.mapper.currentDate
-import com.ljb.domain.model.Holiday
+import com.ljb.domain.usecase.ClearHolidayUseCase
 import com.ljb.domain.usecase.GetHolidayUseCase
 import com.ljb.domain.usecase.RequestHolidayUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,8 +19,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val requestHolidayUseCase: RequestHolidayUseCase,
     private val getHolidayUseCase: GetHolidayUseCase,
+    private val requestHolidayUseCase: RequestHolidayUseCase,
+    private val clearHolidayUseCase: ClearHolidayUseCase,
 ) : ViewModel() {
 
     val holidayList = getHolidayUseCase().stateIn(
@@ -35,8 +36,8 @@ class CalendarViewModel @Inject constructor(
     private val _selectedDate = MutableStateFlow(currentDate)
     val selectDate get() = _selectedDate
 
-    fun processEvent(event: CalendarEvent){
-        when(event){
+    fun processEvent(event: CalendarEvent) {
+        when (event) {
 
             is CalendarEvent.SwipeMonth -> {
                 _calendarMonth.update {
@@ -47,7 +48,7 @@ class CalendarViewModel @Inject constructor(
                     val selectDay = selectDate.value.dayOfMonth       // 선택된 Day
 
                     // 선택 Day 가 변경된 월에 속하지 않을때
-                    if (lastDay < selectDay){
+                    if (lastDay < selectDay) {
                         event.changeMonth.withDayOfMonth(lastDay)    // 변경될 월의 마지막 Day 지정
                     } else {
                         event.changeMonth.withDayOfMonth(selectDay)  // 이전 선택 Day 를 변경될 월의 Day 로 지정
@@ -65,11 +66,18 @@ class CalendarViewModel @Inject constructor(
                     event.selectDate
                 }
             }
+
+            is CalendarEvent.ClearHoliday -> {
+                viewModelScope.launch {
+                    clearHolidayUseCase()
+                }
+            }
         }
     }
 }
 
 sealed class CalendarEvent : UiEvent {
-    data class SwipeMonth(val changeMonth: LocalDate): CalendarEvent()
-    data class SelectDate(val selectDate: LocalDate): CalendarEvent()
+    data class SwipeMonth(val changeMonth: LocalDate) : CalendarEvent()
+    data class SelectDate(val selectDate: LocalDate) : CalendarEvent()
+    data object ClearHoliday : CalendarEvent()
 }

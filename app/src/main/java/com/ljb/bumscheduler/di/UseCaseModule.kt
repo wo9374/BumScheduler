@@ -1,6 +1,7 @@
 package com.ljb.bumscheduler.di
 
 import com.ljb.domain.repository.HolidayRepository
+import com.ljb.domain.usecase.ClearHolidayUseCase
 import com.ljb.domain.usecase.GetHolidayUseCase
 import com.ljb.domain.usecase.RequestHolidayUseCase
 import dagger.Module
@@ -17,4 +18,7 @@ class UseCaseModule {
 
     @Provides
     fun provideGetHolidayUseCase(repository: HolidayRepository) = GetHolidayUseCase(repository)
+
+    @Provides
+    fun provideClearHolidayUseCase(repository: HolidayRepository) = ClearHolidayUseCase(repository)
 }

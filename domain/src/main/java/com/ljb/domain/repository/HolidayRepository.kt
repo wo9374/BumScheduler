@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface HolidayRepository {
     fun getAllHolidays(): Flow<List<Holiday>>
     suspend fun requestHolidays(reqYear: Int)
+    suspend fun clearHolidays()
 }

@@ -54,4 +54,8 @@ class HolidayRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun clearHolidays() {
+        localHolidaySource.clearHolidays()
+    }
 }
