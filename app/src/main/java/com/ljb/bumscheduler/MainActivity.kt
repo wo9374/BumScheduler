@@ -5,8 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DateRange
@@ -30,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -43,6 +48,9 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContent {
             BumSchedulerTheme {
                 BumSchedulerApp()
@@ -70,8 +78,12 @@ sealed class BottomNavItem(
 fun BumSchedulerApp() {
     val navController = rememberNavController()
 
+    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = bottomPadding),
         bottomBar = {
             BottomNavigationBar(navController)
         }
@@ -149,13 +161,13 @@ fun BottomNavigationBar(navController: NavHostController) {
 
 @Preview(showBackground = true)
 @Composable
-fun BumSchedulerAppPreview(){
+fun BumSchedulerAppPreview() {
     BumSchedulerApp()
 }
 
 @Preview(showBackground = true)
 @Composable
-fun BottomNavigationBarPreview(){
+fun BottomNavigationBarPreview() {
     val navController = rememberNavController()
     BottomNavigationBar(navController)
 }

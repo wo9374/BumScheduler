@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,29 +23,42 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -54,7 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ljb.bumscheduler.R
-import com.ljb.bumscheduler.ui.component.bgBorder
+import com.ljb.bumscheduler.ui.component.bgRoundedBorder
 import com.ljb.bumscheduler.ui.component.bgToday
 import com.ljb.bumscheduler.ui.component.noRippleClickable
 import com.ljb.bumscheduler.ui.component.topHorizontalBorder
@@ -79,20 +93,20 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
 
-    val pagerState = rememberPagerState(
-        initialPage = initialPage,
-        initialPageOffsetFraction = 0f
-    ) {
+    val coroutineScope = rememberCoroutineScope()
+
+    val pagerState = rememberPagerState(initialPage = initialPage, initialPageOffsetFraction = 0f) {
         allMonth
     }
 
-    val scope = rememberCoroutineScope()
+    val modalSheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -106,53 +120,69 @@ fun CalendarScreen(
                 },
                 todayClicked = {
                     DlogUtil.d(MyTag, "TopAppbar Today Clicked")
-                    scope.launch {
+                    coroutineScope.launch {
                         viewModel.processEvent(CalendarEvent.SelectDate(currentDate))
                         pagerState.animateScrollToPage(initialPage)
                     }
                 }
             )
-        }
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                modifier = Modifier.size(56.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = CircleShape,
+                onClick = { showBottomSheet = true }
+            ) {
+                Icon(imageVector = Icons.Outlined.Add, contentDescription = "Scheduler Add")
+            }
+        },
+        contentWindowInsets = WindowInsets(0.dp)
     ) { paddingValues ->
-        Column(
-            Modifier
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        )
-        {
+        ) {
+            Column {
 
-            CalendarHeader(
-                modifier = Modifier.padding(horizontal = 10.dp),
-                viewModel = viewModel
-            ).also {
-                DlogUtil.d(MyTag, "Recomposition CalendarScreen CalendarHeader")
+                CalendarHeader(
+                    modifier = Modifier.padding(horizontal = 10.dp),
+                    viewModel = viewModel
+                )
+
+                HorizontalCalendar(
+                    pagerState = pagerState,
+                    viewModel = viewModel
+                )
+
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 5.dp)
+                        .topHorizontalBorder(
+                            strokeWidth = 0.3.dp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            cornerRadiusDp = 0.dp
+                        )
+                )
+
+                HorizontalScheduler(
+                    viewModel = viewModel
+                )
+            }.also {
+                DlogUtil.d(MyTag, "Recomposition CalendarScreen Column")
             }
 
-            HorizontalCalendar(
-                pagerState = pagerState,
-                viewModel = viewModel
-            ).also {
-                DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalCalendar")
+            if (showBottomSheet) {
+                AddSchedulerBottomSheet(
+                    bottomSheetDismiss = { showBottomSheet = false },
+                    modalSheetState = modalSheetState,
+                    onClickSave = {
+                        // 일정 저장 클릭
+                    }
+                )
             }
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 5.dp)
-                    .topHorizontalBorder(
-                        strokeWidth = 0.3.dp,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        cornerRadiusDp = 0.dp
-                    )
-            )
-
-            HorizontalScheduler(
-                viewModel = viewModel
-            ).also {
-                DlogUtil.d(MyTag, "Recomposition CalendarScreen HorizontalScheduler")
-            }
-        }.also {
-            DlogUtil.d(MyTag, "Recomposition CalendarScreen Column")
         }
     }.also {
         DlogUtil.d(MyTag, "Recomposition CalendarScreen Scaffold")
@@ -173,6 +203,7 @@ fun CalendarAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background
         ),
+        windowInsets = WindowInsets(0.dp),  // DecorFitsSystemWindows false 로 인한 windowInset 0 지정
         navigationIcon = {
             // AppBar 크기 변경으로 인한 자동 CenterVertically 적용이 안되어 Box 로 wrap
             Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
@@ -206,7 +237,7 @@ fun CalendarAppBar(
                     Box(
                         modifier = Modifier
                             .size(22.dp)
-                            .bgBorder(
+                            .bgRoundedBorder(
                                 strokeWidth = 0.5.dp,
                                 cornerRadiusDp = 4.dp,
                                 enabled = true
@@ -322,121 +353,6 @@ fun HorizontalCalendar(
             viewModel = viewModel,
             calendarDate = calendarDate,
         )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun HorizontalScheduler(
-    viewModel: CalendarViewModel
-) {
-    val monthDate by viewModel.calendarMonth.collectAsState()
-    val selectedDate by viewModel.selectDate.collectAsState()
-
-    val days = (1..monthDate.lengthOfMonth()).toList().map {
-        monthDate.withDayOfMonth(it)
-    }
-
-    val schedulerState = rememberPagerState(
-        initialPage = selectedDate.dayOfMonth - 1,
-        initialPageOffsetFraction = 0f
-    ) {
-        days.size
-    }
-
-    HorizontalPager(
-        state = schedulerState
-    ) { page ->
-
-        val holidayList by viewModel.holidayList.collectAsState()
-
-        val holidayItem = holidayList.find { it.localDate == days[page] }
-
-        if (holidayItem != null) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item {
-                    SchedulerHoliday(holidayItem)
-                }
-            }
-        } else {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(id = R.string.empty_schedule),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                )
-            }
-        }
-
-    }
-
-    LaunchedEffect(monthDate) {
-        snapshotFlow { schedulerState.currentPage }.collect { currentPage ->
-            val date = days[currentPage]
-            viewModel.processEvent(CalendarEvent.SelectDate(date))
-        }
-    }
-
-    LaunchedEffect(monthDate) {
-        snapshotFlow { selectedDate }.collectLatest {
-            schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
-        }
-    }
-}
-
-@Composable
-fun SchedulerHoliday(
-    item: Holiday
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            modifier = Modifier.wrapContentHeight()
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp)
-            ) {
-                Icon(
-                    modifier = Modifier.size(22.dp),
-                    imageVector = Icons.Outlined.DateRange,
-                    contentDescription = "DateRange",
-                )
-            }
-
-            Spacer(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(22.dp)
-                    .clip(shape = RoundedCornerShape(2.dp))
-                    .background(DefaultGreen)
-            )
-
-            Column(
-                modifier = Modifier
-                    .wrapContentHeight()
-                    .padding(start = 8.dp)
-            ) {
-                Text(
-                    text = item.dateName,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = stringResource(id = R.string.all_day),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                    fontSize = 12.sp,
-                )
-            }
-        }
     }
 }
 
@@ -580,7 +496,7 @@ fun CalendarDay(
             .height(height)
             .clip(shape = RoundedCornerShape(10.dp))
             // 선택 Day Gray Border
-            .bgBorder(
+            .bgRoundedBorder(
                 strokeWidth = 0.5.dp,
                 cornerRadiusDp = 10.dp,
                 enabled = isSelected
@@ -688,6 +604,168 @@ fun PrevNextDay(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HorizontalScheduler(
+    viewModel: CalendarViewModel
+) {
+    val monthDate by viewModel.calendarMonth.collectAsState()
+    val selectedDate by viewModel.selectDate.collectAsState()
+
+    val days = (1..monthDate.lengthOfMonth()).toList().map {
+        monthDate.withDayOfMonth(it)
+    }
+
+    val schedulerState = rememberPagerState(
+        initialPage = selectedDate.dayOfMonth - 1,
+        initialPageOffsetFraction = 0f
+    ) {
+        days.size
+    }
+
+    HorizontalPager(
+        state = schedulerState
+    ) { page ->
+
+        val holidayList by viewModel.holidayList.collectAsState()
+
+        val holidayItem = holidayList.find { it.localDate == days[page] }
+
+        if (holidayItem != null) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item {
+                    SchedulerHoliday(holidayItem)
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(id = R.string.empty_schedule),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
+            }
+        }
+
+    }
+
+    LaunchedEffect(monthDate) {
+        snapshotFlow { schedulerState.currentPage }.collect { currentPage ->
+            val date = days[currentPage]
+            viewModel.processEvent(CalendarEvent.SelectDate(date))
+        }
+    }
+
+    LaunchedEffect(monthDate) {
+        snapshotFlow { selectedDate }.collectLatest {
+            schedulerState.scrollToPage(selectedDate.dayOfMonth - 1)
+        }
+    }
+}
+
+@Composable
+fun SchedulerHoliday(
+    item: Holiday
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp)
+            ) {
+                Icon(
+                    modifier = Modifier.size(22.dp),
+                    imageVector = Icons.Outlined.DateRange,
+                    contentDescription = "DateRange",
+                )
+            }
+
+            Spacer(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(22.dp)
+                    .clip(shape = RoundedCornerShape(2.dp))
+                    .background(DefaultGreen)
+            )
+
+            Column(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .padding(start = 8.dp)
+            ) {
+                Text(
+                    text = item.dateName,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = stringResource(id = R.string.all_day),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddSchedulerBottomSheet(
+    bottomSheetDismiss: () -> Unit,
+    modalSheetState: SheetState,
+    onClickSave: () -> Unit,
+) {
+    var titleText by remember { mutableStateOf("") }
+
+    ModalBottomSheet(
+        onDismissRequest = bottomSheetDismiss,
+        sheetState = modalSheetState
+    ) {
+
+        TextField(
+            value = titleText,
+            onValueChange = { titleText = it },
+            placeholder = { Text(text = "제목") },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                //focusedIndicatorColor = Color.Transparent,
+                //unfocusedIndicatorColor = Color.Transparent,
+            )
+        )
+
+        Row {
+            Button(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                onClick = bottomSheetDismiss
+            ) {
+                Text("취소")
+            }
+            Button(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                onClick = onClickSave
+            ) {
+                Text("저장")
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun CalendarAppBar() {
@@ -711,7 +789,9 @@ fun CalendarHeaderPreview() {
     val modifier = Modifier.padding(horizontal = 10.dp)
 
     Column(
-        modifier = modifier.fillMaxWidth().padding(bottom = 8.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val displayMonth = if (monthDate.year == currentDate.year) {
@@ -739,7 +819,9 @@ fun CalendarHeaderPreview() {
                 }
 
                 Text(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN),
                     color = textColor,
                     fontWeight = FontWeight.Bold,
@@ -759,7 +841,6 @@ fun CalendarGridPreview() {
     val holidayList = emptyList<Holiday>()
 
 
-
     val lastDay = calendarDate.lengthOfMonth()
     val firstDayColumn = calendarDate.dayOfWeek.value
     val lastDayColumn = (firstDayColumn + lastDay - 1) % 7
@@ -770,7 +851,11 @@ fun CalendarGridPreview() {
     if (firstDayColumn != 7) totalGridCount += firstDayColumn
     if (afterBoxCount != 7) totalGridCount += afterBoxCount
 
-    val boxHeight = if (totalGridCount <= 35) { 54.dp } else { 45.dp }
+    val boxHeight = if (totalGridCount <= 35) {
+        54.dp
+    } else {
+        45.dp
+    }
 
     val displayDateList = mutableListOf<LocalDate>()
 
@@ -831,9 +916,13 @@ fun CalendarGridPreview() {
 @Composable
 fun CalendarDayPreview() {
     val totalGridCount = 35
-    val boxHeight = if (totalGridCount <= 28) { 67.5.dp }
-    else if (totalGridCount <= 35) { 54.dp }
-    else { 45.dp }
+    val boxHeight = if (totalGridCount <= 28) {
+        67.5.dp
+    } else if (totalGridCount <= 35) {
+        54.dp
+    } else {
+        45.dp
+    }
 
     CalendarDay(
         height = boxHeight,
@@ -848,9 +937,13 @@ fun CalendarDayPreview() {
 @Composable
 fun PrevNextDayPreview() {
     val totalGridCount = 35
-    val boxHeight = if (totalGridCount <= 28) { 67.5.dp }
-    else if (totalGridCount <= 35) { 54.dp }
-    else { 45.dp }
+    val boxHeight = if (totalGridCount <= 28) {
+        67.5.dp
+    } else if (totalGridCount <= 35) {
+        54.dp
+    } else {
+        45.dp
+    }
 
     PrevNextDay(
         height = boxHeight,
