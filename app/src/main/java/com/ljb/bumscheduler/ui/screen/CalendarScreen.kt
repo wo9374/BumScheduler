@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -59,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -728,20 +730,65 @@ fun AddSchedulerBottomSheet(
 ) {
     var titleText by remember { mutableStateOf("") }
 
+    var onOffAllDay by remember { mutableStateOf(false) }
+
     ModalBottomSheet(
         onDismissRequest = bottomSheetDismiss,
         sheetState = modalSheetState
     ) {
 
         TextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             value = titleText,
             onValueChange = { titleText = it },
             placeholder = { Text(text = "제목") },
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent, 
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = Color.Blue
+            )
+        )
+        
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .topHorizontalBorder(
+                    strokeWidth = 0.3.dp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    cornerRadiusDp = 0.dp
+                )
+        )
+
+        TextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            value = "하루종일",
+            onValueChange = {},
+            enabled = false,
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_access_time_24),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    contentDescription = ""
+                )
+            },
+            trailingIcon = {
+                Switch(checked = onOffAllDay, onCheckedChange = { onOffAllDay = !onOffAllDay })
+            },
+            colors = TextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onBackground,
+                disabledContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                //focusedIndicatorColor = Color.Transparent,
-                //unfocusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = Color.Blue
             )
         )
 
