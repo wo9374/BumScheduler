@@ -10,13 +10,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.MapProperties
+import com.naver.maps.map.compose.MapUiSettings
+import com.naver.maps.map.compose.NaverMap
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun MapScreen() {
     Scaffold { paddingValues ->
@@ -27,6 +35,21 @@ fun MapScreen() {
         ) {
 
         }
+
+        var mapProperties by remember {
+            mutableStateOf(
+                MapProperties(maxZoom = 10.0, minZoom = 5.0)
+            )
+        }
+        var mapUiSettings by remember {
+            mutableStateOf(
+                MapUiSettings(isLocationButtonEnabled = false)
+            )
+        }
+
+        NaverMap(
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
