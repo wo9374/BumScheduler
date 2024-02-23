@@ -28,13 +28,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun MapScreen() {
     Scaffold { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-
-        }
 
         var mapProperties by remember {
             mutableStateOf(
@@ -48,7 +41,9 @@ fun MapScreen() {
         }
 
         NaverMap(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            properties = mapProperties,
+            uiSettings = mapUiSettings
         )
     }
 }
